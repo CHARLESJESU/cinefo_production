@@ -264,24 +264,97 @@ Future<void> createCallSheetFromOfflineWithoutContext(
         (responseData?['callSheetId'] ?? callsheetData['callSheetId'])
             .toString();
 
-    // Check if intime table exists, create it if it doesn't
+    // Handle intime table schema migration
     try {
-      await mainDb.execute('''
-        CREATE TABLE IF NOT EXISTS intime (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          vcid TEXT,
-          callsheetid INTEGER,
-          latitude REAL,
-          longitude REAL,
-          attendance_status TEXT,
-          location TEXT,
-          attendanceDate TEXT,
-          attendanceTime TEXT
-        )
-      ''');
-      print('✅ Ensured intime table exists');
+      // First check if the table has the correct schema by checking columns
+      var result = await mainDb.rawQuery("PRAGMA table_info(intime)");
+      List<String> existingColumns =
+          result.map((row) => row['name'] as String).toList();
+
+      bool hasCorrectSchema = [
+        'name',
+        'designation',
+        'code',
+        'unionName',
+        'marked_at',
+        'mode'
+      ].every((col) => existingColumns.contains(col));
+
+      if (!hasCorrectSchema && existingColumns.isNotEmpty) {
+        print('⚠️ intime table has incorrect schema. Recreating table...');
+
+        // Backup existing data
+        var existingData = await mainDb.query('intime');
+
+        // Drop and recreate with correct schema
+        await mainDb.execute('DROP TABLE IF EXISTS intime');
+        await mainDb.execute('''
+          CREATE TABLE intime (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            designation TEXT,
+            code TEXT,
+            unionName TEXT,
+            vcid TEXT,
+            marked_at TEXT,
+            latitude TEXT,
+            longitude TEXT,
+            location TEXT,
+            attendance_status TEXT,
+            callsheetid INTEGER,
+            mode TEXT,
+            attendanceDate TEXT,
+            attendanceTime TEXT
+          )
+        ''');
+
+        // Restore data that can be migrated
+        for (var row in existingData) {
+          Map<String, dynamic> migratedData = {
+            'vcid': row['vcid'],
+            'callsheetid': row['callsheetid'],
+            'latitude': row['latitude'],
+            'longitude': row['longitude'],
+            'attendance_status': row['attendance_status'],
+            'location': row['location'],
+            'attendanceDate': row['attendanceDate'],
+            'attendanceTime': row['attendanceTime'],
+            'name': '', // Set defaults for new columns
+            'designation': '',
+            'code': '',
+            'unionName': '',
+            'marked_at': '',
+            'mode': 'offline'
+          };
+          await mainDb.insert('intime', migratedData);
+        }
+
+        print('✅ intime table recreated with correct schema and data migrated');
+      } else {
+        // Create table if it doesn't exist
+        await mainDb.execute('''
+          CREATE TABLE IF NOT EXISTS intime (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            designation TEXT,
+            code TEXT,
+            unionName TEXT,
+            vcid TEXT,
+            marked_at TEXT,
+            latitude TEXT,
+            longitude TEXT,
+            location TEXT,
+            attendance_status TEXT,
+            callsheetid INTEGER,
+            mode TEXT,
+            attendanceDate TEXT,
+            attendanceTime TEXT
+          )
+        ''');
+        print('✅ intime table verified or created with complete schema');
+      }
     } catch (e) {
-      print('⚠️ Error creating intime table: $e');
+      print('⚠️ Error handling intime table: $e');
     }
 
     // Query the updated rows for syncing
@@ -298,8 +371,19 @@ Future<void> createCallSheetFromOfflineWithoutContext(
       rows = []; // Set empty list if query fails
     }
     print("❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌");
+    print("🔍🔍🔍 ROWS COUNT: ${rows.length}");
     if (rows.isEmpty) {
+      print("🎯 TAKING FIRST PATH: rows.isEmpty = true");
+      print(
+          "🔍 DEBUG: rows.isEmpty = true, checking callsheet status for closing...");
+      print(
+          "🔍 callsheetData['status']: '${callsheetData['status']}' (type: ${callsheetData['status'].runtimeType})");
+      print(
+          "🔍 Condition check: callsheetData['status'] == 'closed' = ${callsheetData['status'] == 'closed'}");
+
       if (callsheetData['status'] == 'closed') {
+        print(
+            "🎯 FIRST CONDITION: Callsheet status is 'closed' and rows is empty, proceeding with HTTP close request...");
         await http.post(
           processSessionRequest,
           headers: <String, String>{
@@ -335,8 +419,14 @@ Future<void> createCallSheetFromOfflineWithoutContext(
         } catch (e) {
           print('Error deleting callsheetoffline row: ' + e.toString());
         }
+      } else {
+        print(
+            "❌ FIRST CONDITION: Callsheet status is NOT 'closed'. Status: '${callsheetData['status']}'");
+        print("❌ Skipping call sheet closing HTTP request in first condition.");
       }
     } else {
+      print(
+          "🎯 TAKING SECOND PATH: rows.isEmpty = false, processing attendance records first");
       for (final row in rows) {
         print('IntimeSyncService: Attempting to POST row id=${row['id']}');
 
@@ -459,14 +549,23 @@ Future<void> createCallSheetFromOfflineWithoutContext(
       }
 
       // After all attendance syncing is complete, close the call sheet
+      print("🔍 DEBUG: Checking callsheet status for closing...");
+      print(
+          "🔍 callsheetData['status']: '${callsheetData['status']}' (type: ${callsheetData['status'].runtimeType})");
+      print(
+          "🔍 Condition check: callsheetData['status'] == 'closed' = ${callsheetData['status'] == 'closed'}");
+
       if (callsheetData['status'] == 'closed') {
+        print("⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ");
+        print(
+            "✅ Callsheet status is 'closed', proceeding with HTTP close request...");
         await http.post(
           processSessionRequest,
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
             'VMETID':
                 'O/OtGf1bn9oD4GFpjRQ+Dec3uinWC4FwTdbrFCyiQDpN8SPMhon+ZaDHuLsnBHmfqGAjFXy6Gdjt6mQwzwqgfdWu+e+M8qwNk8gX9Ca3JxFQc++CDr8nd1Mrr57aHoLMlXprbFMxNy7ptfNoccm61r/9/lHCANMOt85n05HVfccknlopttLI5WM7DsNVU60/x5qylzlpXL24l8KwEFFPK1ky410+/uI3GkYi0l1u9DektKB/m1CINVbQ1Oob+FOW5lhNsBjqgpM/x1it89d7chbThdP5xlpygZsuG0AW4lakebF3ze497e16600v72fclgAZ3M21C0zUM4w9XIweMg==',
-            'VSID': loginresponsebody?['vsid']?.toString() ?? "",
+            'VSID': vsid ?? "",
           },
           body: jsonEncode(<String, dynamic>{
             "callshettId": callsheetId,
@@ -497,6 +596,10 @@ Future<void> createCallSheetFromOfflineWithoutContext(
         } catch (e) {
           print('Error deleting callsheetoffline row: ' + e.toString());
         }
+      } else {
+        print(
+            "❌ Callsheet status is NOT 'closed'. Status: '${callsheetData['status']}'");
+        print("❌ Skipping call sheet closing HTTP request.");
       }
     }
 

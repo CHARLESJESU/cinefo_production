@@ -48,16 +48,25 @@ class _ReportdetailsState extends State<Reportdetails> {
         if (attendanceMap.containsKey(personKey)) {
           // Update existing entry
           if (attendanceStatus == '1') {
-            attendanceMap[personKey] = attendanceMap[personKey]!
-                .copyWith(inTime: _formatTime(markedTime));
+            attendanceMap[personKey] = attendanceMap[personKey]!.copyWith(
+              inTime: _formatTime(markedTime),
+            );
           } else if (attendanceStatus == '2') {
-            attendanceMap[personKey] = attendanceMap[personKey]!
-                .copyWith(outTime: _formatTime(markedTime));
+            attendanceMap[personKey] = attendanceMap[personKey]!.copyWith(
+              outTime: _formatTime(markedTime),
+            );
           }
         } else {
-          // Create new entry
+          // Create new entry - for offline data, create combined code from available fields
+          String unitCode = record['unitId']?.toString() ?? '';
+          String memberCodeCode = record['code']?.toString() ?? '';
+          String combinedCode = unitCode.isNotEmpty && memberCodeCode.isNotEmpty
+              ? '$unitCode-$memberCodeCode'
+              : (unitCode.isNotEmpty ? unitCode : memberCodeCode);
+
           attendanceMap[personKey] = AttendanceEntry(
             memberName: record['name'] ?? 'Unknown',
+            code: combinedCode.isNotEmpty ? combinedCode : null,
             inTime: attendanceStatus == '1' ? _formatTime(markedTime) : null,
             outTime: attendanceStatus == '2' ? _formatTime(markedTime) : null,
           );
@@ -197,6 +206,15 @@ class _ReportdetailsState extends State<Reportdetails> {
                         children: [
                           SizedBox(width: 10),
                           Expanded(
+                            flex: 2,
+                            child: Text('Code',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color.fromRGBO(131, 77, 218, 1),
+                                )),
+                          ),
+                          Expanded(
+                            flex: 3,
                             child: Text('Name',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -210,6 +228,7 @@ class _ReportdetailsState extends State<Reportdetails> {
                                   color: Color.fromRGBO(131, 77, 218, 1),
                                 )),
                           ),
+                          SizedBox(width: 20),
                           Expanded(
                             child: Text('Out Time',
                                 style: TextStyle(
@@ -236,8 +255,12 @@ class _ReportdetailsState extends State<Reportdetails> {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             child: Row(
                               children: [
-                                Expanded(child: Text(entry.memberName)),
+                                Expanded(
+                                    flex: 2, child: Text(entry.code ?? "--")),
+                                Expanded(
+                                    flex: 3, child: Text(entry.memberName)),
                                 Expanded(child: Text(entry.inTime ?? "--")),
+                                SizedBox(width: 20),
                                 Expanded(child: Text(entry.outTime ?? "--")),
                               ],
                             ),
@@ -255,18 +278,27 @@ class _ReportdetailsState extends State<Reportdetails> {
 
 class AttendanceEntry {
   final String memberName;
+  final String? code;
   final String? inTime;
   final String? outTime;
 
   AttendanceEntry({
     required this.memberName,
+    this.code,
     this.inTime,
     this.outTime,
   });
 
   factory AttendanceEntry.fromJson(Map<String, dynamic> json) {
+    String unitCode = json['unitcode']?.toString() ?? '';
+    String memberCodeCode = json['membercodeCode']?.toString() ?? '';
+    String combinedCode = unitCode.isNotEmpty && memberCodeCode.isNotEmpty
+        ? '$unitCode-$memberCodeCode'
+        : (unitCode.isNotEmpty ? unitCode : memberCodeCode);
+
     return AttendanceEntry(
       memberName: json['memberName'] ?? '',
+      code: combinedCode.isNotEmpty ? combinedCode : null,
       inTime: json['intime'],
       outTime: json['outTime'],
     );
@@ -274,11 +306,13 @@ class AttendanceEntry {
 
   AttendanceEntry copyWith({
     String? memberName,
+    String? code,
     String? inTime,
     String? outTime,
   }) {
     return AttendanceEntry(
       memberName: memberName ?? this.memberName,
+      code: code ?? this.code,
       inTime: inTime ?? this.inTime,
       outTime: outTime ?? this.outTime,
     );

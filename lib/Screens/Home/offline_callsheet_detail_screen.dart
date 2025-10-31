@@ -344,7 +344,7 @@ class OfflineCallsheetDetailScreen extends StatelessWidget {
                             onTap: enableAttendanceButtons
                                 ? () {
                                     print('In-time tapped. productionTypeId: '
-                                        '[33m$productionTypeId[0m, passProjectidresponse: '
+                                        '[33m$productionTypeId[0m, passProjectidresponse: '
                                         '\u001b[33m${passProjectidresponse?['errordescription']}\u001b[0m');
                                     if (productionTypeId == 3) {
                                       print(
@@ -391,7 +391,7 @@ class OfflineCallsheetDetailScreen extends StatelessWidget {
                             onTap: enableAttendanceButtons
                                 ? () {
                                     print('Out-time tapped. productionTypeId: '
-                                        '[33m$productionTypeId[0m, passProjectidresponse: '
+                                        '[33m$productionTypeId[0m, passProjectidresponse: '
                                         '\u001b[33m${passProjectidresponse?['errordescription']}\u001b[0m');
                                     if (productionTypeId == 3) {
                                       print(

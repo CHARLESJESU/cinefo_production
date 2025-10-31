@@ -66,182 +66,182 @@ class _CallSheetState extends State<CallSheet> {
         return Scaffold(
           backgroundColor: const Color.fromRGBO(247, 244, 244, 1),
           body: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _fetchCallsheetData,
-              child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: MediaQuery.of(context).size.height,
-                  ),
-                  child: Stack(
-                    children: [
-                      // Full screen blue container
-                      Container(
-                        width: double.infinity,
-                        height: MediaQuery.of(context).size.height - 200,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFF2B5682),
-                              Color(0xFF24426B),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(20),
-                            bottomRight: Radius.circular(20),
-                          ),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height,
+                ),
+                child: Stack(
+                  children: [
+                    // Full screen blue container
+                    Container(
+                      width: double.infinity,
+                      height: MediaQuery.of(context).size.height - 200,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF2B5682),
+                            Color(0xFF24426B),
+                          ],
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            left: horizontalPadding,
-                            top: 20,
-                            right: horizontalPadding,
-                            bottom: 20,
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Text("CallSheet",
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: fontSizeHeader,
-                                          fontWeight: FontWeight.w500)),
-                                  const Spacer(),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              OfflineCreateCallSheet(),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.white),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Icon(Icons.add,
-                                          color: Colors.white, size: 20),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
                         ),
                       ),
-
-                      // Today's Schedule section above profile card
-                      Padding(
+                      child: Padding(
                         padding: EdgeInsets.only(
-                          top: isMobile ? 60 : 70,
                           left: horizontalPadding,
+                          top: 20,
                           right: horizontalPadding,
+                          bottom: 20,
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Text("CallSheet",
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: fontSizeHeader,
+                                        fontWeight: FontWeight.w500)),
+                                const Spacer(),
+                                GestureDetector(
+                                  onTap: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            OfflineCreateCallSheet(),
+                                      ),
+                                    );
+                                    // Refresh when coming back from create screen
+                                    await _fetchCallsheetData();
+                                  },
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.white),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.add,
+                                        color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Today's Schedule section above profile card
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: isMobile ? 60 : 70,
+                        left: horizontalPadding,
+                        right: horizontalPadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Today's Schedule",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: fontSizeHeader,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Offline call sheet section
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: isMobile ? 140 : 150,
+                        left: horizontalPadding,
+                        right: horizontalPadding,
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Today's Schedule",
+                              'Callsheet',
                               style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: fontSizeHeader,
-                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2B5682),
                               ),
                             ),
+                            const SizedBox(height: 15),
+                            if (_callsheetList.isNotEmpty)
+                              ..._callsheetList.map((item) => _buildListItem(
+                                    item['callSheetNo']?.toString() ?? '',
+                                    item['locationType']?.toString() ?? '',
+                                    (item['created_at']?.toString() ?? '')
+                                        .split('T')
+                                        .first,
+                                    item['status']?.toString() ?? '',
+                                    callsheetData: item,
+                                  ))
+                            else
+                              Container(
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.description_outlined,
+                                      size: 48,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No call sheet available',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Create a call sheet to see it here',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                       ),
-
-                      // Offline call sheet section
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: isMobile ? 140 : 150,
-                          left: horizontalPadding,
-                          right: horizontalPadding,
-                        ),
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Callsheet',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2B5682),
-                                ),
-                              ),
-                              SizedBox(height: 15),
-                              if (_callsheetList.isNotEmpty)
-                                ..._callsheetList.map((item) => _buildListItem(
-                                      item['callSheetNo']?.toString() ?? '',
-                                      item['locationType']?.toString() ?? '',
-                                      (item['created_at']?.toString() ?? '')
-                                          .split('T')
-                                          .first,
-                                      item['status']?.toString() ?? '',
-                                      callsheetData: item,
-                                    ))
-                              else
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.symmetric(vertical: 20),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.description_outlined,
-                                        size: 48,
-                                        color: Colors.grey[400],
-                                      ),
-                                      SizedBox(height: 12),
-                                      Text(
-                                        'No call sheet available',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        'Create a call sheet to see it here',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[500],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

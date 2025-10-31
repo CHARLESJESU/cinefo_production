@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'individualunitpage.dart';
 
 class ConfigurationScreen extends StatefulWidget {
@@ -21,6 +22,22 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _responseUnits = [];
   String _errorMessage = "";
+  bool _isOffline = false;
+
+  // Function to check internet connectivity
+  Future<bool> checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com').timeout(
+        Duration(seconds: 5),
+      );
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+    return false;
+  }
 
   // Function to fetch login data and make HTTP request
   Future<void> fetchLoginDataAndMakeRequest() async {
@@ -140,8 +157,30 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
   @override
   void initState() {
     super.initState();
-    // Call the function when the screen initializes
-    fetchLoginDataAndMakeRequest();
+    // Check internet connection first
+    initializeScreen();
+  }
+
+  // Initialize screen with internet check
+  Future<void> initializeScreen() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = "";
+    });
+
+    bool hasInternet = await checkInternetConnection();
+
+    if (hasInternet) {
+      // If online, fetch data from server
+      fetchLoginDataAndMakeRequest();
+    } else {
+      // If offline, show offline message
+      setState(() {
+        _isLoading = false;
+        _isOffline = true;
+        _errorMessage = "";
+      });
+    }
   }
 
   @override
@@ -193,7 +232,7 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
                         ),
                         SizedBox(height: 20),
                         Text(
-                          'Loading...',
+                          'Checking connection...',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -203,19 +242,19 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
                       ],
                     ),
                   )
-                : _errorMessage.isNotEmpty
+                : _isOffline
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.error_outline,
-                              color: Colors.red,
-                              size: 60,
+                              Icons.wifi_off,
+                              color: Colors.orange,
+                              size: 80,
                             ),
-                            SizedBox(height: 20),
+                            SizedBox(height: 30),
                             Text(
-                              'Error',
+                              'You\'re in Offline Mode',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -223,11 +262,11 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
                                 fontFamily: 'Airbnb',
                               ),
                             ),
-                            SizedBox(height: 10),
+                            SizedBox(height: 15),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(horizontal: 40),
                               child: Text(
-                                _errorMessage,
+                                'Configuration requires an internet connection. Please check your network settings and try again.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.white70,
@@ -236,150 +275,131 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 30),
-                            ElevatedButton(
-                              onPressed: () {
-                                fetchLoginDataAndMakeRequest();
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 30, vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            SizedBox(height: 40),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () {
+                                    initializeScreen();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 25, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.refresh, size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Retry',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Airbnb',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                'Retry',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Airbnb',
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                OfflineCallsheetDetailScreen(
+                                                    callsheet:
+                                                        widget.callsheet)));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey[600],
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 25, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.arrow_back, size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Go Back',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Airbnb',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),
                       )
-                    : _responseUnits.isEmpty
+                    : _errorMessage.isNotEmpty
                         ? Center(
-                            child: Text(
-                              'No units found',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontFamily: 'Airbnb',
-                              ),
-                            ),
-                          )
-                        : Column(
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  itemCount: _responseUnits.length,
-                                  itemBuilder: (context, index) {
-                                    final unit = _responseUnits[index];
-                                    return Padding(
-                                      padding: EdgeInsets.only(bottom: 15),
-                                      child: Container(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            // Assign unitid to config_unitid
-                                            int selectedUnitId = unit['unitid']
-                                                    is int
-                                                ? unit['unitid']
-                                                : int.tryParse(unit['unitid']
-                                                        .toString()) ??
-                                                    0;
-                                            String selectedUnitName =
-                                                unit['unitType'] ?? 'Unknown';
-
-                                            // Set global variables
-                                            config_unitid = selectedUnitId;
-                                            config_unitname = selectedUnitName;
-
-                                            print(
-                                                'Selected Unit ID: ${unit['unitid']}');
-                                            print(
-                                                'config_unitid set to: $config_unitid');
-                                            print(
-                                                'config_unitname set to: $config_unitname');
-
-                                            // Navigate to individual unit page with parameters
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    Individualunitpage(
-                                                        callsheet:
-                                                            widget.callsheet,
-                                                        config_unitid:
-                                                            selectedUnitId,
-                                                        config_unitname:
-                                                            selectedUnitName,
-                                                        callsheetid:
-                                                            widget.callsheetid),
-                                              ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                Colors.blue.withOpacity(0.8),
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.all(20),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                unit['unitType'] ?? 'Unknown',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontFamily: 'Airbnb',
-                                                ),
-                                              ),
-                                              SizedBox(height: 5),
-                                              Text(
-                                                'ID: ${unit['unitid']}',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white70,
-                                                  fontFamily: 'Airbnb',
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 60,
                                 ),
-                              ),
-                              SizedBox(height: 10),
-                              Container(
-                                width: double.infinity,
-                                child: ElevatedButton(
+                                SizedBox(height: 20),
+                                Text(
+                                  'Error',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Airbnb',
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 20),
+                                  child: Text(
+                                    _errorMessage,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                      fontFamily: 'Airbnb',
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 30),
+                                ElevatedButton(
                                   onPressed: () {
-                                    fetchLoginDataAndMakeRequest();
+                                    setState(() {
+                                      _isOffline = false;
+                                    });
+                                    initializeScreen();
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.orange,
+                                    backgroundColor: Colors.blue,
                                     foregroundColor: Colors.white,
-                                    padding: EdgeInsets.all(16),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 30, vertical: 15),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   child: Text(
-                                    'Refresh',
+                                    'Retry',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -387,9 +407,146 @@ class _ConfigurationScreenState extends State<ConfigurationScreen> {
                                     ),
                                   ),
                                 ),
+                              ],
+                            ),
+                          )
+                        : _responseUnits.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No units found',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontFamily: 'Airbnb',
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: _responseUnits.length,
+                                      itemBuilder: (context, index) {
+                                        final unit = _responseUnits[index];
+                                        return Padding(
+                                          padding: EdgeInsets.only(bottom: 15),
+                                          child: Container(
+                                            width: double.infinity,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                // Assign unitid to config_unitid
+                                                int selectedUnitId =
+                                                    unit['unitid'] is int
+                                                        ? unit['unitid']
+                                                        : int.tryParse(unit[
+                                                                    'unitid']
+                                                                .toString()) ??
+                                                            0;
+                                                String selectedUnitName =
+                                                    unit['unitType'] ??
+                                                        'Unknown';
+
+                                                // Set global variables
+                                                config_unitid = selectedUnitId;
+                                                config_unitname =
+                                                    selectedUnitName;
+
+                                                print(
+                                                    'Selected Unit ID: ${unit['unitid']}');
+                                                print(
+                                                    'config_unitid set to: $config_unitid');
+                                                print(
+                                                    'config_unitname set to: $config_unitname');
+
+                                                // Navigate to individual unit page with parameters
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        Individualunitpage(
+                                                            callsheet: widget
+                                                                .callsheet,
+                                                            config_unitid:
+                                                                selectedUnitId,
+                                                            config_unitname:
+                                                                selectedUnitName,
+                                                            callsheetid: widget
+                                                                .callsheetid),
+                                                  ),
+                                                );
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue
+                                                    .withOpacity(0.8),
+                                                foregroundColor: Colors.white,
+                                                padding: EdgeInsets.all(20),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    unit['unitType'] ??
+                                                        'Unknown',
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontFamily: 'Airbnb',
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 5),
+                                                  Text(
+                                                    'ID: ${unit['unitid']}',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.white70,
+                                                      fontFamily: 'Airbnb',
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Container(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _isOffline = false;
+                                        });
+                                        initializeScreen();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        foregroundColor: Colors.white,
+                                        padding: EdgeInsets.all(16),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Refresh',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Airbnb',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
           ),
         ),
       ],

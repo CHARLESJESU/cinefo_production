@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:production/Screens/callsheet/createcallsheet.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class OfflineCreateCallSheet extends StatefulWidget {
   const OfflineCreateCallSheet({super.key});
@@ -156,6 +156,8 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
   List<Map<String, dynamic>> shiftList = [];
   List<String> shiftTimes = [];
   int? selectedShiftId;
+  double? selectedLatitude;
+  double? selectedLongitude;
   Future<Database> get _callsheetDb async {
     String dbPath = path.join(await getDatabasesPath(), 'production_login.db');
     return openDatabase(
@@ -282,194 +284,74 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       _locationController.text = "Fetching location...";
     });
 
-    try {
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        // Ask user to enable location services
-        bool? enableLocation = await _showLocationServiceDialog();
-        if (enableLocation != true) {
-          setState(() {
-            _locationController.text = "Location services disabled";
-          });
-          return;
-        }
+    Position? position = await Geolocator.getLastKnownPosition();
 
-        // Check again after user interaction
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-          throw Exception('Location services are still disabled');
-        }
-      }
-
-      // Check and request location permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Location permission denied');
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception(
-            'Location permissions are permanently denied. Please enable them in app settings.');
-      }
-
-      // Get current position
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 15),
-      );
-
-      // Convert coordinates to human-readable address
-      setState(() {
-        _locationController.text = "Getting address...";
-      });
-
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
-
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
-
-        // Build a readable address
-        List<String> addressParts = [];
-
-        if (place.street != null && place.street!.isNotEmpty) {
-          addressParts.add(place.street!);
-        }
-        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
-          addressParts.add(place.subLocality!);
-        }
-        if (place.locality != null && place.locality!.isNotEmpty) {
-          addressParts.add(place.locality!);
-        }
-        if (place.administrativeArea != null &&
-            place.administrativeArea!.isNotEmpty) {
-          addressParts.add(place.administrativeArea!);
-        }
-        if (place.country != null && place.country!.isNotEmpty) {
-          addressParts.add(place.country!);
-        }
-
-        String fullAddress = addressParts.join(", ");
-
-        // If no proper address found, fall back to coordinates
-        if (fullAddress.isEmpty || fullAddress == ", , , , ") {
-          fullAddress =
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Long: ${position.longitude.toStringAsFixed(4)}';
-        }
-
-        setState(() {
-          _locationController.text = fullAddress;
-        });
-
-        // Optional: Open Google Maps for verification
-        await _openGoogleMaps(position.latitude, position.longitude);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location and address fetched successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        // Fallback to coordinates if address not found
-        setState(() {
-          _locationController.text =
-              'Lat: ${position.latitude.toStringAsFixed(4)}, Long: ${position.longitude.toStringAsFixed(4)}';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location found but address not available'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _locationController.text = "Location not available";
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error getting location: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+    if (position == null) {
+      position = await _determinePosition();
     }
-  }
 
-  Future<bool?> _showLocationServiceDialog() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Enable Location Services'),
-          content: const Text(
-            'This app needs location services to fetch your current address. Please enable GPS/Location services in your device settings.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            ),
-            TextButton(
-              child: const Text('Settings'),
-              onPressed: () async {
-                Navigator.of(context).pop(true);
-                // Open location settings
-                await Geolocator.openLocationSettings();
-              },
-            ),
-          ],
-        );
-      },
+    LatLng initialPosition = LatLng(position.latitude, position.longitude);
+
+    LatLng? pickedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OpenStreetMapScreen(initialPosition),
+      ),
     );
-  }
 
-  Future<void> _openGoogleMaps(double latitude, double longitude) async {
-    try {
-      final String googleMapsUrl =
-          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-
-      bool launched = false;
+    if (pickedLocation != null) {
+      setState(() {
+        _locationController.text = "Fetching address...";
+      });
 
       try {
-        launched = await launchUrl(
-          Uri.parse(googleMapsUrl),
-          mode: LaunchMode.externalApplication,
-        );
-      } catch (e1) {
-        try {
-          launched = await launchUrl(
-            Uri.parse(googleMapsUrl),
-            mode: LaunchMode.platformDefault,
-          );
-        } catch (e2) {
-          print('Failed to launch Google Maps: $e2');
-        }
-      }
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+            pickedLocation.latitude, pickedLocation.longitude);
 
-      if (launched) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Opening Google Maps for verification...'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        String fullAddress = [
+          placemarks.first.street,
+          placemarks.first.subLocality,
+          placemarks.first.locality,
+          placemarks.first.administrativeArea,
+          placemarks.first.country
+        ].where((e) => e != null && e.isNotEmpty).join(", ");
+
+        setState(() {
+          selectedLatitude = pickedLocation.latitude;
+          selectedLongitude = pickedLocation.longitude;
+          _locationController.text = fullAddress;
+        });
+      } catch (e) {
+        setState(() {
+          _locationController.text = "Address not found";
+        });
       }
-    } catch (e) {
-      print('Error opening Google Maps: $e');
     }
+  }
+
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+
+    return await Geolocator.getCurrentPosition();
   }
 
   // Future<void> _openGoogleMaps() async {
@@ -906,6 +788,132 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class OpenStreetMapScreen extends StatefulWidget {
+  final LatLng initialPosition;
+  OpenStreetMapScreen(this.initialPosition, {Key? key}) : super(key: key);
+
+  @override
+  _OpenStreetMapScreenState createState() => _OpenStreetMapScreenState();
+}
+
+class _OpenStreetMapScreenState extends State<OpenStreetMapScreen> {
+  late LatLng selectedLocation;
+  final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    selectedLocation = widget.initialPosition;
+  }
+
+  // 🔍 Function to Search for Location
+  Future<void> _searchLocation() async {
+    String query = _searchController.text;
+    if (query.isEmpty) return;
+
+    try {
+      List<Location> locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        setState(() {
+          selectedLocation =
+              LatLng(locations.first.latitude, locations.first.longitude);
+          _mapController.move(selectedLocation, 15.0);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Location not found!")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Select Location"),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 🔍 Search Bar
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: "Search location...",
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: _searchLocation,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 🗺️ Map (Expanded for responsiveness)
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: selectedLocation,
+                    initialZoom: 13.0,
+                    onTap: (_, latLng) {
+                      setState(() {
+                        selectedLocation = latLng;
+                      });
+                    },
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                      subdomains: ['a', 'b', 'c'],
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: selectedLocation,
+                          width: 40.0,
+                          height: 40.0,
+                          child: const Icon(Icons.location_on,
+                              size: 40, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ✅ Floating Button for Confirm
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.pop(context, selectedLocation),
+        icon: const Icon(Icons.check),
+        label: const Text("Confirm"),
       ),
     );
   }

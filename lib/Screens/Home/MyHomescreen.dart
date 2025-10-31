@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:production/Profile/profilesccreen.dart';
 import 'package:production/Profile/changepassword.dart';
+
+import 'package:production/Screens/Attendance/nfcUIDreader.dart';
 import 'package:production/Screens/callsheet/offlinecreatecallsheet.dart';
 import 'package:production/Screens/callsheet/createcallsheet.dart';
 import 'package:production/Tesing/Sqlitelist.dart';
@@ -387,6 +389,43 @@ class _MyHomescreenState extends State<MyHomescreen> {
                       ),
                     ),
                   ),
+
+                  Divider(
+                    color: Colors.white.withOpacity(0.3),
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.calendar_month,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    title: Text(
+                      'NFC',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context); // Close drawer first
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => NfcHomePage(),
+                      //   ),
+                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NfcHomePage(),
+                        ),
+                      );
+                    },
+                  ),
                   Divider(
                     color: Colors.white.withOpacity(0.3),
                     thickness: 1,
@@ -532,7 +571,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white)),
-                                  Text("pakka mass Production MANAGER",
+                                  Text("Production Manager",
                                       style: TextStyle(
                                           fontSize: 12, color: Colors.white70)),
                                   Text(_mobileNumber ?? '',

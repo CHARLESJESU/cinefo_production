@@ -171,8 +171,8 @@ class _UnitmemberpersonState extends State<Unitmemberperson> {
 
     final payload = {
       "vmid": vmIds,
-      "configid": widget.unitid,
-      "unitId": widget.config_unitid,
+      "configid": widget.config_unitid,
+      "unitId": widget.unitid,
       "callSheetId": widget.callsheetid
     };
 

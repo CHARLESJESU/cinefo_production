@@ -8,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:production/variables.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:production/Screens/Home/automaticexecution.dart';
+// import 'package:production/Screens/Home/automaticexecution.dart';
 
 String transformVcidToImageUrl(String vcid) {
   final transformedVcid = vcid
@@ -409,150 +409,150 @@ class IntimeSyncService {
 
   Future<void> _tryPostIntimeRows() async {
     await processAllOfflineCallSheets();
-    //   print('IntimeSyncService: Timer fired, checking for rows...');
-    //   if (_isPosting) return;
-    //   _isPosting = true;
-    //   Database? db;
-    //   try {
-    //     var connectivityResult = await Connectivity().checkConnectivity();
-    //     print('IntimeSyncService: Connectivity: $connectivityResult');
-    //     if (connectivityResult == ConnectivityResult.none) {
-    //       print('IntimeSyncService: No internet, skipping this cycle.');
-    //       _isPosting = false;
-    //       return;
-    //     }
-    //     final dbPath = await getDatabasesPath();
-    //     db = await openDatabase(path.join(dbPath, 'production_login.db'));
-    //     await db.execute('''
-    //     CREATE TABLE IF NOT EXISTS intime (
-    //       id INTEGER PRIMARY KEY AUTOINCREMENT,
-    //       name TEXT,
-    //       designation TEXT,
-    //       code TEXT,
-    //       unionName TEXT,
-    //       vcid TEXT,
-    //       marked_at TEXT,
-    //       latitude TEXT,
-    //       longitude TEXT,
-    //       location TEXT,
-    //       attendance_status TEXT,
-    //       callsheetid INTEGER,
-    //       mode TEXT,
-    //       attendanceDate TEXT,
-    //       attendanceTime TEXT
-    //     )
-    //   ''');
+    print('IntimeSyncService: Timer fired, checking for rows...');
+    if (_isPosting) return;
+    _isPosting = true;
+    Database? db;
+    try {
+      var connectivityResult = await Connectivity().checkConnectivity();
+      print('IntimeSyncService: Connectivity: $connectivityResult');
+      if (connectivityResult == ConnectivityResult.none) {
+        print('IntimeSyncService: No internet, skipping this cycle.');
+        _isPosting = false;
+        return;
+      }
+      final dbPath = await getDatabasesPath();
+      db = await openDatabase(path.join(dbPath, 'production_login.db'));
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS intime (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          designation TEXT,
+          code TEXT,
+          unionName TEXT,
+          vcid TEXT,
+          marked_at TEXT,
+          latitude TEXT,
+          longitude TEXT,
+          location TEXT,
+          attendance_status TEXT,
+          callsheetid INTEGER,
+          mode TEXT,
+          attendanceDate TEXT,
+          attendanceTime TEXT
+        )
+      ''');
 
-    //     final List<Map<String, dynamic>> rows = await db.query(
-    //       'intime',
-    //       where: 'mode = ?',
-    //       whereArgs: ['offline'],
-    //       orderBy: 'id ASC', // FIFO
-    //     );
-    //     print('IntimeSyncService: Found \\${rows.length} online rows to sync.');
-    //     for (final row in rows) {
-    //       print('IntimeSyncService: Attempting to POST row id=\\${row['id']}');
-    //       // final requestBody = jsonEncode({
-    //       //   "data": row['vcid'],
-    //       //   "callsheetid": productionTypeId == 3 ? 0 : row['callsheetid'],
-    //       //   "projectid": productionTypeId == 3 ? selectedProjectId : projectId,
-    //       //   "productionTypeId": productionTypeId == 3 ? productionTypeId : 2,
-    //       //   "doubing": {},
-    //       //   "latitude": row['latitude'],
-    //       //   "longitude": row['longitude'],
-    //       //   "attendanceStatus": row['attendance_status'],
-    //       //   "location": row['location'],
-    //       // });
-    //       final requestBody = jsonEncode({
-    //         "data": row['vcid'],
-    //         "callsheetid": row['callsheetid'],
-    //         "projectid": projectId,
-    //         "productionTypeId": productionTypeId,
-    //         "doubing": {},
-    //         "latitude": row['latitude'],
-    //         "longitude": row['longitude'],
-    //         "attendanceStatus": row['attendance_status'],
-    //         "location": row['location'],
-    //         "attendanceDate": row['attendanceDate'],
-    //         "attendanceTime": row['attendanceTime'],
-    //       });
-    //       // Get VSID from loginresponsebody or fallback to SQLite
-    //       String? vsid = loginresponsebody?['vsid']?.toString();
-    //       if (vsid == null || vsid.isEmpty) {
-    //         try {
-    //           final dbPath = await getDatabasesPath();
-    //           final db =
-    //               await openDatabase(path.join(dbPath, 'production_login.db'));
-    //           final List<Map<String, dynamic>> loginRows =
-    //               await db.query('login_data', orderBy: 'id ASC', limit: 1);
-    //           if (loginRows.isNotEmpty && loginRows.first['vsid'] != null) {
-    //             vsid = loginRows.first['vsid'].toString();
-    //           }
-    //           await db.close();
-    //         } catch (e) {
-    //           print('Error fetching vsid from SQLite: $e');
-    //         }
-    //       }
-    //       print("📊📊📊📊📊📊📊📊📊📊 VSID: $vsid");
-    //       print("📊📊📊📊📊📊📊📊📊📊 Request Body: $processSessionRequest");
-    //       final response = await http.post(
-    //         processSessionRequest,
-    //         headers: {
-    //           'Content-Type': 'application/json; charset=UTF-8',
-    //           'VMETID':
-    //               "ZRaYT9Da/Sv4QuuHfhiVvjCkg5cM5eCUEIN/w8pmJuIB0U/tbjZYxO4ShGIQEr4e5w2lwTSWArgTUc1AcaU/Qi9CxL6bi18tfj5+SWs+Sc9TV/1EMOoJJ2wxvTyRIl7+F5Tz7ELXkSdETOQCcZNaGTYKy/FGJRYVs3pMrLlUV59gCnYOiQEzKObo8Iz0sYajyJld+/ZXeT2dPStZbTR4N6M1qbWvS478EsPahC7vnrS0ZV5gEz8CYkFS959F2IpSTmEF9N/OTneYOETkyFl1BJhWJOknYZTlwL7Hrrl9HYO12FlDRgNUuWCJCepFG+Rmy8VMZTZ0OBNpewjhDjJAuQ==",
-    //           'VSID': vsid ?? "",
-    //         },
-    //         body: requestBody,
-    //       );
-    //       print(
-    //           'IntimeSyncService: Sending POST request with body: $requestBody');
-    //       // Print response body in chunks to handle large responses
-    //       print('📊 Response body length: ${response.body.length}');
-    //       if (response.body.isNotEmpty) {
-    //         const int chunkSize = 800; // Print in chunks of 800 characters
-    //         for (int i = 0; i < response.body.length; i += chunkSize) {
-    //           int end = (i + chunkSize < response.body.length)
-    //               ? i + chunkSize
-    //               : response.body.length;
-    //           print(
-    //               '📊 Chunk ${(i / chunkSize).floor() + 1}: ${response.body.substring(i, end)}');
-    //         }
-    //       } else {
-    //         print('📊 Response body is empty');
-    //       }
+      final List<Map<String, dynamic>> rows = await db.query(
+        'intime',
+        where: 'mode = ?',
+        whereArgs: ['offline'],
+        orderBy: 'id ASC', // FIFO
+      );
+      print('IntimeSyncService: Found \\${rows.length} online rows to sync.');
+      for (final row in rows) {
+        print('IntimeSyncService: Attempting to POST row id=\\${row['id']}');
+        // final requestBody = jsonEncode({
+        //   "data": row['vcid'],
+        //   "callsheetid": productionTypeId == 3 ? 0 : row['callsheetid'],
+        //   "projectid": productionTypeId == 3 ? selectedProjectId : projectId,
+        //   "productionTypeId": productionTypeId == 3 ? productionTypeId : 2,
+        //   "doubing": {},
+        //   "latitude": row['latitude'],
+        //   "longitude": row['longitude'],
+        //   "attendanceStatus": row['attendance_status'],
+        //   "location": row['location'],
+        // });
+        final requestBody = jsonEncode({
+          "data": row['vcid'],
+          "callsheetid": row['callsheetid'],
+          "projectid": projectId,
+          "productionTypeId": productionTypeId,
+          "doubing": {},
+          "latitude": row['latitude'],
+          "longitude": row['longitude'],
+          "attendanceStatus": row['attendance_status'],
+          "location": row['location'],
+          "attendanceDate": row['attendanceDate'],
+          "attendanceTime": row['attendanceTime'],
+        });
+        // Get VSID from loginresponsebody or fallback to SQLite
+        String? vsid = loginresponsebody?['vsid']?.toString();
+        if (vsid == null || vsid.isEmpty) {
+          try {
+            final dbPath = await getDatabasesPath();
+            final db =
+                await openDatabase(path.join(dbPath, 'production_login.db'));
+            final List<Map<String, dynamic>> loginRows =
+                await db.query('login_data', orderBy: 'id ASC', limit: 1);
+            if (loginRows.isNotEmpty && loginRows.first['vsid'] != null) {
+              vsid = loginRows.first['vsid'].toString();
+            }
+            await db.close();
+          } catch (e) {
+            print('Error fetching vsid from SQLite: $e');
+          }
+        }
+        print("📊📊📊📊📊📊📊📊📊📊 VSID: $vsid");
+        print("📊📊📊📊📊📊📊📊📊📊 Request Body: $processSessionRequest");
+        final response = await http.post(
+          processSessionRequest,
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'VMETID':
+                "ZRaYT9Da/Sv4QuuHfhiVvjCkg5cM5eCUEIN/w8pmJuIB0U/tbjZYxO4ShGIQEr4e5w2lwTSWArgTUc1AcaU/Qi9CxL6bi18tfj5+SWs+Sc9TV/1EMOoJJ2wxvTyRIl7+F5Tz7ELXkSdETOQCcZNaGTYKy/FGJRYVs3pMrLlUV59gCnYOiQEzKObo8Iz0sYajyJld+/ZXeT2dPStZbTR4N6M1qbWvS478EsPahC7vnrS0ZV5gEz8CYkFS959F2IpSTmEF9N/OTneYOETkyFl1BJhWJOknYZTlwL7Hrrl9HYO12FlDRgNUuWCJCepFG+Rmy8VMZTZ0OBNpewjhDjJAuQ==",
+            'VSID': vsid ?? "",
+          },
+          body: requestBody,
+        );
+        print(
+            'IntimeSyncService: Sending POST request with body: $requestBody');
+        // Print response body in chunks to handle large responses
+        print('📊 Response body length: ${response.body.length}');
+        if (response.body.isNotEmpty) {
+          const int chunkSize = 800; // Print in chunks of 800 characters
+          for (int i = 0; i < response.body.length; i += chunkSize) {
+            int end = (i + chunkSize < response.body.length)
+                ? i + chunkSize
+                : response.body.length;
+            print(
+                '📊 Chunk ${(i / chunkSize).floor() + 1}: ${response.body.substring(i, end)}');
+          }
+        } else {
+          print('📊 Response body is empty');
+        }
 
-    //       print('IntimeSyncService: POST statusCode=\\${response.statusCode}');
-    //       if (response.statusCode == 200 || response.statusCode == 1017) {
-    //         print(
-    //             "IntimeSyncService: Deleting row id=${row['id']} after successful POST.");
-    //         try {
-    //           await db.delete('intime', where: 'id = ?', whereArgs: [row['id']]);
-    //           print('✅ Successfully deleted row id=${row['id']}');
-    //         } catch (e) {
-    //           print('❌ Error deleting record: $e');
-    //         }
-    //       } else if (response.statusCode == -1 ||
-    //           response.statusCode == 400 ||
-    //           response.statusCode == 500) {
-    //         print(
-    //             "IntimeSyncService: Skipping row id=${row['id']} due to statusCode=${response.statusCode}. Data not deleted.");
-    //         // Skip this row, do not delete, continue to next row
-    //         continue;
-    //       } else {
-    //         print(
-    //             "IntimeSyncService: POST failed for row id=${row['id']}, stopping sync this cycle.");
-    //         // Stop on first failure to preserve FIFO
-    //         break;
-    //       }
-    //     }
-    //   } catch (e) {
-    //     print('Sync error: $e');
-    //   } finally {
-    //     if (db != null && db.isOpen) {
-    //       await db.close();
-    //     }
-    //     _isPosting = false;
-    //   }
+        print('IntimeSyncService: POST statusCode=\\${response.statusCode}');
+        if (response.statusCode == 200 || response.statusCode == 1017) {
+          print(
+              "IntimeSyncService: Deleting row id=${row['id']} after successful POST.");
+          try {
+            await db.delete('intime', where: 'id = ?', whereArgs: [row['id']]);
+            print('✅ Successfully deleted row id=${row['id']}');
+          } catch (e) {
+            print('❌ Error deleting record: $e');
+          }
+        } else if (response.statusCode == -1 ||
+            response.statusCode == 400 ||
+            response.statusCode == 500) {
+          print(
+              "IntimeSyncService: Skipping row id=${row['id']} due to statusCode=${response.statusCode}. Data not deleted.");
+          // Skip this row, do not delete, continue to next row
+          continue;
+        } else {
+          print(
+              "IntimeSyncService: POST failed for row id=${row['id']}, stopping sync this cycle.");
+          // Stop on first failure to preserve FIFO
+          break;
+        }
+      }
+    } catch (e) {
+      print('Sync error: $e');
+    } finally {
+      if (db != null && db.isOpen) {
+        await db.close();
+      }
+      _isPosting = false;
+    }
   }
 }
