@@ -50,14 +50,16 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
     try {
       final db = await _callsheetDb;
 
-      // Check if same shiftId already exists for today's date
-      String todayDate =
-          "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}";
+      // Check if same shiftId already exists for the selected date
+      String selectedDateStr =
+          "${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}";
+
+      print('📅 Selected Date for SQLite: $selectedDateStr');
 
       final existingShift = await db.query(
         'callsheetoffline',
         where: 'shiftId = ? AND created_date = ?',
-        whereArgs: [selectedShiftId, todayDate],
+        whereArgs: [selectedShiftId, selectedDateStr],
       );
 
       if (existingShift.isNotEmpty) {
@@ -119,17 +121,21 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
                 ? 'Out-station'
                 : 'Outside City',
         'locationTypeId': selectedLocationType,
-        'created_at':
-            "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
+        'created_at': selectedDateStr,
         'status': 'open',
-        'created_date':
-            "${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}",
+        'created_date': selectedDateStr,
         'created_at_time':
             DateTime.now().toString().split(' ')[1].split('.')[0],
         'pack_up_time': null,
         'pack_up_date': null,
         'isonline': '0', // Indicate this entry was created offline
       };
+
+      // Debug: Print the data being inserted
+      print('📝 Inserting callsheet to SQLite:');
+      print('   - created_at: ${data['created_at']}');
+      print('   - created_date: ${data['created_date']}');
+      print('   - callsheetname: ${data['callsheetname']}');
 
       await db.insert('callsheetoffline', data);
 

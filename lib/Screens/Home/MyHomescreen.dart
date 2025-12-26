@@ -14,6 +14,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:production/Screens/Login/loginscreen.dart';
 import 'dart:io';
 
+import 'approvalstatus.dart';
+
 class MyHomescreen extends StatefulWidget {
   const MyHomescreen({super.key});
 
@@ -493,9 +495,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
                 color: Colors.white,
                 iconSize: 24,
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('No new notifications')),
-                  );
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>Approvalstatus()));
                 },
               ),
               Builder(

@@ -8,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:production/variables.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
-// import 'package:production/Screens/Home/automaticexecution.dart';
+import 'package:production/Screens/Home/automaticexecution.dart';
 
 String transformVcidToImageUrl(String vcid) {
   final transformedVcid = vcid

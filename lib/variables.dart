@@ -6,6 +6,7 @@ TextEditingController loginmobilenumber = TextEditingController();
 TextEditingController loginpassword = TextEditingController();
 
 Map? loginresult;
+Map? globalloginData;
 String? location;
 String? locationofcharles;
 bool isoffline = false;
@@ -43,9 +44,9 @@ int secondLeadRole = 0;
 int leadRoleOtherLanguage = 0;
 int secondLeadRoleOtherLanguage = 0;
 final processRequest =
-    Uri.parse('https://vgate.vframework.in/vgateapi/processRequest');
+    Uri.parse('https://devvgate.vframework.in/vgateapi/processRequest');
 final processSessionRequest =
-    Uri.parse('https://vgate.vframework.in/vgateapi/processSessionRequest');
+    Uri.parse('https://devvgate.vframework.in/vgateapi/processSessionRequest');
 
 Map? closecallsheetresponse;
 Map<String, int> dubbingConfigStates = {};
