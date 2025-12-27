@@ -83,6 +83,8 @@ int juinor_unitid = 12;
 int allowanceid_withoutbreak = 14;
 int allowanceid_helper = 23;
 int allowanceid_incharge = 24;
+String productionbaseurl = "producermember.cinefo.club";
+String devbaseurl = "productionmanager.cinefo.club";
 String vmetid_fetch_config_unit_allowance =
     "QFjnHX2oXXReKA3tMjSN4dO8aT2LlE8O098UrCx6/szGQef/YKIzM2LehxeOBDZDNKZaeuOkTBKOfTIg03wvVPXUONEXWTvvKrQQ7heqxVKuyDxiMRcyPqLTkbcMAiibPoSJGSCUIhYToVwE+TWVLUW2Ke68yJdCgMrKFAxMwkx+yZdfZkSYILX25NMAunaH7ziKHEfbinOTQdIUR9xGnH9uord4oVLNW7vPSjVNkc7VAbpuz8L8Qr5I4FYUDKRDuz63H0XZSeX2+U6kzaSPMk870Y/jW+V47iYb2z4OQryivUdycPtdj6Zm7Wt8WWk8jGQJRFWx+UVUIs16c11Kqg==";
 

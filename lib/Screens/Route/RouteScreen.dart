@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:production/Screens/Home/Homescreen.dart';
 import 'package:production/Screens/Home/MyHomescreen.dart';
 import 'package:production/Screens/callsheet/callsheet.dart';
 import 'package:production/Screens/report/Reports.dart';
@@ -72,14 +71,15 @@ class _RoutescreenState extends State<Routescreen> {
         // return const MovieListScreen();
         return const MyHomescreen();
       case 1:
-        if (productionTypeId == 3) {
-          return (selectedProjectId != null && selectedProjectId != "0")
-              ? CallSheet()
-              : const MovieListScreen();
-        } else {
-          // For productionTypeId == 2 or any other case
-          return CallSheet();
-        }
+        // if (productionTypeId == 3) {
+        //   return (selectedProjectId != null && selectedProjectId != "0")
+        //       ? CallSheet()
+        //       : const MovieListScreen();
+        // } else {
+        //   // For productionTypeId == 2 or any other case
+        //   return CallSheet();
+        // }
+        return CallSheet();
 
       case 2:
         return Reports(
@@ -89,7 +89,7 @@ class _RoutescreenState extends State<Routescreen> {
       // case 3:
       //   return TripScreen();
       default:
-        return const MovieListScreen();
+        return const MyHomescreen();
     }
   }
 }
