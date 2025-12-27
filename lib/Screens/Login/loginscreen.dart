@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:production/Screens/Route/RouteScreen.dart';
-import 'package:production/methods.dart';
+import 'package:production/Screens/Home/importantfunc.dart';
 import 'package:production/variables.dart';
 import 'package:flutter_device_imei/flutter_device_imei.dart';
 import 'package:sqflite/sqflite.dart';

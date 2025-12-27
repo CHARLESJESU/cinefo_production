@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:production/Screens/Route/RouteScreen.dart';
-import 'package:production/methods.dart';
+import 'package:production/Screens/Home/importantfunc.dart';
 import 'package:production/variables.dart';
 
 class Changepassword extends StatefulWidget {
@@ -45,7 +45,7 @@ class _ChangepasswordState extends State<Changepassword> {
       setState(() {
         isloading = false;
       });
-      showsuccessPopUp(context, "Password changed", () {});
+      showsuccessPopUpSync(context, "Password changed", () {});
 
       currentpassword.clear();
       newpassword.clear();
