@@ -12,6 +12,42 @@ Future<void> printVSIDFromLoginData() async {
   try {
     final dbPath = await getDatabasesPath();
     final db = await openDatabase(path.join(dbPath, 'production_login.db'));
+
+    // Ensure login_data table exists before querying
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS login_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        manager_name TEXT,
+        profile_image TEXT,
+        registered_movie TEXT,
+        mobile_number TEXT,
+        password TEXT,
+        project_id TEXT,
+        production_type_id INTEGER,
+        production_house TEXT,
+        vmid INTEGER,
+        login_date TEXT,
+        device_id TEXT,
+        vsid TEXT,
+        vpid TEXT,
+        vuid INTEGER,
+        companyName TEXT,
+        email TEXT,
+        vbpid INTEGER,
+        vcid INTEGER,
+        vsubid INTEGER,
+        vpoid INTEGER,
+        mtypeId INTEGER,
+        unitName TEXT,
+        vmTypeId INTEGER,
+        idcardurl TEXT,
+        vpidpo INTEGER,
+        vpidbp INTEGER,
+        unitid INTEGER,
+        platformlogo TEXT
+      )
+    ''');
+
     final List<Map<String, dynamic>> loginRows =
         await db.query('login_data', orderBy: 'id ASC', limit: 1);
     if (loginRows.isNotEmpty && loginRows.first['vsid'] != null) {
@@ -37,6 +73,34 @@ Future<void> processAllOfflineCallSheets() async {
     // Get database path and open connection
     final dbPath = await getDatabasesPath();
     final db = await openDatabase(path.join(dbPath, 'production_login.db'));
+
+    // Ensure callsheetoffline table exists before querying
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS callsheetoffline (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        callSheetId INTEGER,
+        callSheetNo TEXT,
+        MovieName TEXT,
+        callsheetname TEXT,
+        shift TEXT,
+        shiftId INTEGER,
+        latitude REAL,
+        longitude REAL,
+        projectId TEXT,
+        productionTypeid INTEGER,
+        location TEXT,
+        locationType TEXT,
+        locationTypeId INTEGER,
+        created_at TEXT,
+        status TEXT,
+        created_at_time TEXT,
+        created_date TEXT,
+        pack_up_time TEXT,
+        pack_up_date TEXT,
+        isonline TEXT
+      )
+    ''');
+    print('✅ callsheetoffline table verified/created');
 
     // Query all records from callsheetoffline table
     final List<Map<String, dynamic>> callsheetRecords = await db.query(

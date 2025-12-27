@@ -144,6 +144,41 @@ class _MyHomescreenState extends State<MyHomescreen> {
           path.join(await getDatabasesPath(), 'production_login.db');
       final db = await openDatabase(dbPath);
 
+      // Ensure table exists before attempting delete
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS login_data (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_name TEXT,
+          profile_image TEXT,
+          registered_movie TEXT,
+          mobile_number TEXT,
+          password TEXT,
+          project_id TEXT,
+          production_type_id INTEGER,
+          production_house TEXT,
+          vmid INTEGER,
+          login_date TEXT,
+          device_id TEXT,
+          vsid TEXT,
+          vpid TEXT,
+          vuid INTEGER,
+          companyName TEXT,
+          email TEXT,
+          vbpid INTEGER,
+          vcid INTEGER,
+          vsubid INTEGER,
+          vpoid INTEGER,
+          mtypeId INTEGER,
+          unitName TEXT,
+          vmTypeId INTEGER,
+          idcardurl TEXT,
+          vpidpo INTEGER,
+          vpidbp INTEGER,
+          unitid INTEGER,
+          platformlogo TEXT
+        )
+      ''');
+
       // Delete all records from login_data table
       await db.delete('login_data');
       await db.close();
@@ -495,7 +530,10 @@ class _MyHomescreenState extends State<MyHomescreen> {
                 color: Colors.white,
                 iconSize: 24,
                 onPressed: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context)=>Approvalstatus()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Approvalstatus()));
                 },
               ),
               Builder(
