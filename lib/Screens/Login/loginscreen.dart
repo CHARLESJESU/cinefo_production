@@ -527,7 +527,7 @@ class _LoginscreenState extends State<Loginscreen> {
           'VMETID':
               'byrZ4bZrKm09R4O7WH6SPd7tvAtGnK1/plycMSP8sD5TKI/VZR0tHBKyO/ogYUIf4Qk6HJXvgyGzg58v0xmlMoRJABt3qUUWGtnJj/EKBsrOaFFGZ6xAbf6k6/ktf2gKsruyfbF2/D7r1CFZgUlmTmubGS1oMZZTSU433swBQbwLnPSreMNi8lIcHJKR2WepQnzNkwPPXxA4/XuZ7CZqqsfO6tmjnH47GoHr7H+FC8GK24zU3AwGIpX+Yg/efeibwapkP6mAya+5BTUGtNtltGOm0q7+2EJAfNcrSTdmoDB8xBerLaNNHhwVHowNIu+8JZl2QM0F/gmVpB55cB8rqg=='
         },
-        body: jsonEncode(<String, String>{"baseURL": devbaseurl}),
+        body: jsonEncode(<String, String>{"baseURL": mainbaseurl}),
       );
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
@@ -569,7 +569,7 @@ class _LoginscreenState extends State<Loginscreen> {
           'DEVICETYPE': '2',
           'Content-Type': 'application/json; charset=UTF-8',
           'VPID': baseurlresult?['vpid']?.toString() ?? '',
-          "BASEURL": devbaseurl,
+          "BASEURL": mainbaseurl,
           'VPTEMPLATEID': baseurlresult?['vptemplteID']?.toString() ?? '',
           'VMETID':
               'jcd3r0UZg4FnqnFKCfAZqwj+d5Y7TJhxN6vIvKsoJIT++90iKP3dELmti79Q+W7aVywvVbhfoF5bdW32p33PbRRTT27Jt3pahRrFzUe5s0jQBoeE0jOraLITDQ6RBv0QoscoOGxL7n0gEWtLE15Bl/HSF2kG5pQYft+ZyF4DNsLf7tGXTz+w/30bv6vMTGmwUIDWqbEet/+5AAjgxEMT/G4kiZifX0eEb3gMxycdMchucGbMkhzK+4bvZKmIjX+z6uz7xqb1SMgPnjKmoqCk8w833K9le4LQ3KSYkcVhyX9B0Q3dDc16JDtpEPTz6b8rTwY8puqlzfuceh5mWogYuA==',
