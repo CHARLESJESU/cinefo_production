@@ -465,6 +465,7 @@ class IntimeSyncService {
         // });
         final requestBody = jsonEncode({
           "data": row['vcid'],
+          "tempId" : row['callsheetid'],
           "callsheetid": row['callsheetid'],
           "projectid": projectId,
           "productionTypeId": productionTypeId,

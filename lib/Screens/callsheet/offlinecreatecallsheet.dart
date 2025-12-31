@@ -98,7 +98,7 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       final loginData = loginRows.first;
 
       // Generate unique callSheetId using format: "YYMMDD-shiftId-deviceId"
-      String callSheetId = '$dateForId-$selectedShiftId-${loginData['device_id']}';
+      String callSheetId = '$dateForId-$selectedShiftId-${loginData['cinefoDeviceId']}';
       
       // Generate unique callSheetNo: "CN" + (max existing id + 1)
       final result =

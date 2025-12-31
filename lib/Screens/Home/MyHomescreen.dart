@@ -594,7 +594,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
                                     Text(
                                       _registeredMovie ?? '',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.white,
                                       ),
