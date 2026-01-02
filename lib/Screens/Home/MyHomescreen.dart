@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:production/Profile/profilesccreen.dart';
 import 'package:production/Profile/changepassword.dart';
-
 import 'package:production/Screens/Attendance/nfcUIDreader.dart';
-import 'package:production/Screens/callsheet/offlinecreatecallsheet.dart';
-import 'package:production/Screens/callsheet/createcallsheet.dart';
 import 'package:production/Tesing/Sqlitelist.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
-import 'package:production/Screens/Home/offline_callsheet_detail_screen.dart';
-import 'package:production/Screens/Home/importantfunc.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:production/Screens/Login/loginscreen.dart';
-import 'dart:io';
-
 import 'approvalstatus.dart';
 
 class MyHomescreen extends StatefulWidget {
@@ -30,15 +22,14 @@ class _MyHomescreenState extends State<MyHomescreen> {
   String? _registeredMovie;
   String? _productionHouse;
   String? _profileImage;
-  List<Map<String, dynamic>> _callsheetList = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchLoginAndCallsheetData();
+    _fetchLoginData();
   }
 
-  Future<void> _fetchLoginAndCallsheetData() async {
+  Future<void> _fetchLoginData() async {
     try {
       String dbPath =
           path.join(await getDatabasesPath(), 'production_login.db');
@@ -61,48 +52,6 @@ class _MyHomescreenState extends State<MyHomescreen> {
           _profileImage = loginMaps.first['profile_image']?.toString();
         });
       }
-      // Ensure callsheetoffline table exists
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS callsheetoffline (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          callSheetId INTEGER,
-          callSheetNo TEXT,
-          MovieName TEXT,
-          callsheetname TEXT,
-          shift TEXT,
-          shiftId INTEGER,
-          latitude REAL,
-          longitude REAL,
-          projectId TEXT,
-          productionTypeid INTEGER,
-          location TEXT,
-          locationType TEXT,
-          locationTypeId INTEGER,
-          created_at TEXT,
-          status TEXT,
-          created_at_time TEXT,
-          created_date TEXT,
-          pack_up_time TEXT,
-          pack_up_date TEXT,
-          isonline TEXT
-        )
-      ''');
-
-      // Fetch callsheet data
-      try {
-        final List<Map<String, dynamic>> callsheetMaps = await db.query(
-          'callsheetoffline',
-          orderBy: 'created_at DESC',
-        );
-        setState(() {
-          _callsheetList = callsheetMaps;
-        });
-      } catch (e) {
-        print('Error fetching callsheet data: $e');
-        setState(() {
-          _callsheetList = [];
-        });
-      }
       await db.close();
     } catch (e) {
       setState(() {
@@ -112,7 +61,6 @@ class _MyHomescreenState extends State<MyHomescreen> {
         _registeredMovie = '';
         _productionHouse = '';
         _profileImage = null;
-        _callsheetList = [];
       });
     }
   }
@@ -143,6 +91,41 @@ class _MyHomescreenState extends State<MyHomescreen> {
       String dbPath =
           path.join(await getDatabasesPath(), 'production_login.db');
       final db = await openDatabase(dbPath);
+
+      // Ensure table exists before attempting delete
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS login_data (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          manager_name TEXT,
+          profile_image TEXT,
+          registered_movie TEXT,
+          mobile_number TEXT,
+          password TEXT,
+          project_id TEXT,
+          production_type_id INTEGER,
+          production_house TEXT,
+          vmid INTEGER,
+          login_date TEXT,
+          device_id TEXT,
+          vsid TEXT,
+          vpid TEXT,
+          vuid INTEGER,
+          companyName TEXT,
+          email TEXT,
+          vbpid INTEGER,
+          vcid INTEGER,
+          vsubid INTEGER,
+          vpoid INTEGER,
+          mtypeId INTEGER,
+          unitName TEXT,
+          vmTypeId INTEGER,
+          idcardurl TEXT,
+          vpidpo INTEGER,
+          vpidbp INTEGER,
+          unitid INTEGER,
+          platformlogo TEXT
+        )
+      ''');
 
       // Delete all records from login_data table
       await db.delete('login_data');
@@ -476,26 +459,15 @@ class _MyHomescreenState extends State<MyHomescreen> {
               ),
             ),
             actions: [
-              // IconButton(
-              //   icon: Icon(Icons.add),
-              //   color: Colors.white,
-              //   iconSize: 24,
-              //   onPressed: () async {
-              //     await Navigator.push(
-              //       context,
-              //       MaterialPageRoute(
-              //         builder: (context) => CreateCallSheet(),
-              //       ),
-              //     );
-              //     _fetchLoginAndCallsheetData(); // Refresh after returning
-              //   },
-              // ),
               IconButton(
                 icon: Icon(Icons.notifications),
                 color: Colors.white,
                 iconSize: 24,
                 onPressed: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context)=>Approvalstatus()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Approvalstatus()));
                 },
               ),
               Builder(
@@ -509,7 +481,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
             ],
           ),
           body: RefreshIndicator(
-            onRefresh: _fetchLoginAndCallsheetData,
+            onRefresh: _fetchLoginData,
             child: SingleChildScrollView(
               physics: AlwaysScrollableScrollPhysics(),
               child: Padding(
@@ -622,7 +594,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
                                     Text(
                                       _registeredMovie ?? '',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.white,
                                       ),
@@ -660,82 +632,7 @@ class _MyHomescreenState extends State<MyHomescreen> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 20), // Space after container 2
-                    // Offline call sheet section
-                    // Padding(
-                    //   padding: const EdgeInsets.symmetric(horizontal: 30),
-                    //   child: Container(
-                    //     margin: EdgeInsets.only(top: 10),
-                    //     padding: EdgeInsets.all(16),
-                    //     decoration: BoxDecoration(
-                    //       color: Colors.white,
-                    //       borderRadius: BorderRadius.circular(15),
-                    //       boxShadow: [
-                    //         BoxShadow(
-                    //           color: Colors.black.withOpacity(0.08),
-                    //           blurRadius: 6,
-                    //           offset: Offset(0, 2),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //     child: Column(
-                    //       crossAxisAlignment: CrossAxisAlignment.start,
-                    //       children: [
-                    //         Text(
-                    //           'Offline call sheet',
-                    //           style: TextStyle(
-                    //             fontSize: 16,
-                    //             fontWeight: FontWeight.bold,
-                    //             color: Color(0xFF2B5682),
-                    //           ),
-                    //         ),
-                    //         SizedBox(height: 15),
-                    //         if (_callsheetList.isNotEmpty)
-                    //           ..._callsheetList.map((item) => _buildListItem(
-                    //                 item['callSheetNo']?.toString() ?? '',
-                    //                 item['locationType']?.toString() ?? '',
-                    //                 (item['created_at']?.toString() ?? '')
-                    //                     .split('T')
-                    //                     .first,
-                    //                 item['status']?.toString() ?? '',
-                    //                 callsheetData: item,
-                    //               ))
-                    //         else
-                    //           Container(
-                    //             width: double.infinity,
-                    //             padding: EdgeInsets.symmetric(vertical: 20),
-                    //             child: Column(
-                    //               mainAxisAlignment: MainAxisAlignment.center,
-                    //               children: [
-                    //                 Icon(
-                    //                   Icons.description_outlined,
-                    //                   size: 48,
-                    //                   color: Colors.grey[400],
-                    //                 ),
-                    //                 SizedBox(height: 12),
-                    //                 Text(
-                    //                   'No offline call sheet available',
-                    //                   style: TextStyle(
-                    //                     fontSize: 14,
-                    //                     color: Colors.grey[600],
-                    //                     fontWeight: FontWeight.w500,
-                    //                   ),
-                    //                 ),
-                    //                 SizedBox(height: 4),
-                    //                 Text(
-                    //                   'Create a call sheet to see it here',
-                    //                   style: TextStyle(
-                    //                     fontSize: 12,
-                    //                     color: Colors.grey[500],
-                    //                   ),
-                    //                 ),
-                    //               ],
-                    //             ),
-                    //           ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
+                    SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -743,149 +640,6 @@ class _MyHomescreenState extends State<MyHomescreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // Helper method to get initial 3 list items
-
-  // Helper method to build individual list item
-  Widget _buildListItem(String code, String timing, String date, String status,
-      {Map<String, dynamic>? callsheetData}) {
-    return GestureDetector(
-      onTap: () async {
-        if (callsheetData != null) {
-          if (status == 'open') {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    OfflineCallsheetDetailScreen(callsheet: callsheetData),
-              ),
-            );
-            if (result == true) {
-              _fetchLoginAndCallsheetData();
-            }
-          }
-        }
-      },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 10),
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Left side - Code and timing
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    code,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2B5682),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    timing,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  // Execute button - commented out for future use
-                  // if (status.toLowerCase() == 'closed')
-                  //   Padding(
-                  //     padding: const EdgeInsets.only(top: 8.0),
-                  //     child: ElevatedButton(
-                  //       style: ElevatedButton.styleFrom(
-                  //         backgroundColor: Color(0xFF2B5682),
-                  //         foregroundColor: Colors.white,
-                  //         minimumSize: Size(80, 32),
-                  //         padding:
-                  //             EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  //         shape: RoundedRectangleBorder(
-                  //           borderRadius: BorderRadius.circular(8),
-                  //         ),
-                  //       ),
-                  //       onPressed: () async {
-                  //         bool internetAvailable = false;
-                  //         try {
-                  //           var connectivityResult =
-                  //               await Connectivity().checkConnectivity();
-                  //           if (connectivityResult ==
-                  //                   ConnectivityResult.mobile ||
-                  //               connectivityResult == ConnectivityResult.wifi) {
-                  //             internetAvailable = true;
-                  //           }
-                  //         } catch (e) {
-                  //           // fallback: try to ping google
-                  //           try {
-                  //             final result =
-                  //                 await InternetAddress.lookup('google.com');
-                  //             if (result.isNotEmpty &&
-                  //                 result[0].rawAddress.isNotEmpty) {
-                  //               internetAvailable = true;
-                  //             }
-                  //           } catch (_) {
-                  //             internetAvailable = false;
-                  //           }
-                  //         }
-                  //         if (internetAvailable) {
-                  //           // ignore: use_build_context_synchronously
-                  //           await createCallSheetFromOffline(
-                  //               callsheetData ?? {}, context);
-                  //         } else {
-                  //           ScaffoldMessenger.of(context).showSnackBar(
-                  //             SnackBar(
-                  //               content: Text('Internet is not available'),
-                  //               backgroundColor: Colors.red,
-                  //             ),
-                  //           );
-                  //         }
-                  //       },
-                  //       child: Text('Execute'),
-                  //     ),
-                  //   ),
-                ],
-              ),
-            ),
-            // Right side - Date
-            Expanded(
-              flex: 1,
-              child: Text(
-                date,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF355E8C),
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

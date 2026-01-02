@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:production/Screens/Home/importantfunc.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:intl/intl.dart';
 import 'package:production/Screens/report/Reportdetails.dart';
-import 'package:production/sessionexpired.dart';
 import 'package:production/variables.dart';
 
 class Reports extends StatefulWidget {
@@ -25,30 +25,10 @@ class _ReportsState extends State<Reports> {
   @override
   void initState() {
     super.initState();
-    fetchVSIDFromLoginData().then((_) => Future.wait([
+    printVSIDFromLoginData().then((_) => Future.wait([
           callsheet(), // Fetch API data
           fetchOfflineCallSheets(), // Fetch SQLite data
         ]));
-  }
-
-  Future<void> fetchVSIDFromLoginData() async {
-    try {
-      final dbPath = await getDatabasesPath();
-      final db = await openDatabase('${dbPath}/production_login.db');
-      final List<Map<String, dynamic>> loginRows =
-          await db.query('login_data', orderBy: 'id ASC', limit: 1);
-      if (loginRows.isNotEmpty && loginRows.first['vsid'] != null) {
-        setState(() {
-          vsid = loginRows.first['vsid'].toString();
-          vmid = loginRows.first['vmid'];
-          projectId = loginRows.first['project_id'];
-          // Do NOT overwrite projectId here, use widget.projectId for navigation and API
-        });
-      }
-      await db.close();
-    } catch (e) {
-      print('Error fetching VSID from login_data: $e');
-    }
   }
 
   Future<void> fetchOfflineCallSheets() async {
@@ -95,6 +75,14 @@ class _ReportsState extends State<Reports> {
       // Check if widget is still mounted before processing response
       if (!mounted) return;
 
+      // ✅ Check for session expiration using global helper
+      if (checkSessionExpiration(context, response)) {
+        if (mounted) {
+          setState(() => isLoading = false);
+        }
+        return; // Stop processing if session expired
+      }
+
       if (response.statusCode == 200) {
         print("✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅${response.body} ");
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -110,30 +98,10 @@ class _ReportsState extends State<Reports> {
           }
         }
       } else {
-        try {
-          Map error = jsonDecode(response.body);
-          print(error);
-
-          // Check mounted before navigation and setState
-          if (mounted) {
-            if (error['errordescription'] == "Session Expired") {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const Sessionexpired()));
-            }
-            setState(() {
-              isLoading = false;
-            });
-          }
-        } catch (e) {
-          print("Error parsing error response: $e");
-          // Check mounted before final setState
-          if (mounted) {
-            setState(() {
-              isLoading = false;
-            });
-          }
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
         }
       }
     } catch (e) {

@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:async';
-// import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:production/Screens/Route/RouteScreen.dart';
-import 'package:production/methods.dart';
+import 'package:production/Screens/Home/importantfunc.dart';
 import 'package:production/variables.dart';
 import 'package:flutter_device_imei/flutter_device_imei.dart';
 import 'package:sqflite/sqflite.dart';
@@ -36,10 +35,12 @@ class _LoginscreenState extends State<Loginscreen> {
   // Helper method to create login_data table
   Future<void> _createLoginTable(Database db) async {
     try {
+      // await db.execute('DROP TABLE IF EXISTS login_data');
       await db.execute('''
         CREATE TABLE IF NOT EXISTS login_data (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           manager_name TEXT,
+          cinefoDeviceId INTEGER,
           profile_image TEXT,
           registered_movie TEXT,
           mobile_number TEXT,
@@ -222,45 +223,48 @@ class _LoginscreenState extends State<Loginscreen> {
     return result == true;
   }
 
-  // Save login data to SQLite (ONLY if table is empty - first user only)
+  // Save login data to SQLite (replaces existing data)
   Future<void> saveLoginData() async {
-    try {
-      print('🔄 Starting saveLoginData...');
-      final db = await database;
-      print('✅ Database connection obtained');
+    Database? db;
+    int retryCount = 0;
+    const maxRetries = 3;
 
-      // Ensure table exists before any operations
-      await _createLoginTable(db);
-      print('✅ Login table verified/created');
+    while (retryCount < maxRetries) {
+      try {
+        print(
+            '🔄 Starting saveLoginData (attempt ${retryCount + 1}/$maxRetries)...');
+        // Open a fresh database connection instead of reusing the cached one
+        String dbPath =
+            path.join(await getDatabasesPath(), 'production_login.db');
+        db = await openDatabase(dbPath);
+        print('✅ Fresh database connection obtained');
+        print('🔍 Database is open: ${db.isOpen}');
 
-      // Use a transaction to ensure the database stays open
-      await db.transaction((txn) async {
-        // For testing purposes, clear existing data first
-        await txn.delete('login_data');
-        print('🗑️ Cleared existing login data for fresh test');
-
-        // Check if table already contains any data
-        final existingData = await txn.query('login_data');
-        print('📊 Existing data count: ${existingData.length}');
-
-        if (existingData.isNotEmpty) {
+        // Check if database is still open before proceeding
+        if (!db.isOpen) {
           print(
-              '🚫 Login table already contains data. Skipping insert (First user only policy)');
-          print('📊 Existing records count: ${existingData.length}');
-          print(
-              '👤 First user: ${existingData.first['manager_name']} (${existingData.first['mobile_number']})');
-          return; // Exit without adding new data
+              '⚠️ Database was closed immediately after opening. Retrying...');
+          retryCount++;
+          await Future.delayed(Duration(milliseconds: 100));
+          continue;
         }
 
-        // Table is empty, proceed with first user registration
-        print('✅ Login table is empty. Adding first user data...');
-        print('🔍 Current ProfileImage variable value: "$ProfileImage"');
-        print('🔍 ProfileImage type: ${ProfileImage.runtimeType}');
-        print('🔍 ProfileImage length: ${ProfileImage?.length}');
+        // Ensure table exists before any operations
+        await _createLoginTable(db);
+        print('✅ Login table verified/created');
 
-        // Prepare login data for first user
+        // Clear existing data first - NO TRANSACTION
+        print('🗑️ Deleting existing login data...');
+        await db.delete('login_data');
+        print('✅ Cleared existing login data');
+
+        // Prepare login data
+        print('� Preparing login data...');
+        print('📱 Using cinefoDeviceId from device registration: $cinefoDeviceId');
+        
         final loginData = {
           'manager_name': managerName ?? '',
+          'cinefoDeviceId': cinefoDeviceId,
           'profile_image': ProfileImage ?? '',
           'registered_movie': registeredMovie ?? '',
           'mobile_number': loginmobilenumber.text,
@@ -293,31 +297,69 @@ class _LoginscreenState extends State<Loginscreen> {
         print(
             '📝 ProfileImage value being saved: "${loginData['profile_image']}"');
         print('📝 Full login data being saved: $loginData');
-        print('📝 Adding FIRST USER login data: $loginData');
 
-        // Insert first user login data within transaction
-        final insertResult = await txn.insert(
+        // Insert login data - NO TRANSACTION
+        print('💾 Inserting login data...');
+        final insertResult = await db.insert(
           'login_data',
           loginData,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
 
         print(
-            '🎉 FIRST USER login data saved to SQLite successfully with ID: $insertResult');
-      });
+            '🎉 Login data saved to SQLite successfully with ID: $insertResult');
 
-      // Verify the data was stored correctly outside transaction
-      final savedData = await getActiveLoginData();
-      print('🔍 Verification - Retrieved first user data: $savedData');
-    } catch (e) {
-      print('❌ Error saving login data: $e');
-      print('❌ Error type: ${e.runtimeType}');
-      print('❌ Stack trace: ${StackTrace.current}');
+        // Verify the data was stored (optional - may fail if DB closes)
+        try {
+          final savedData =
+              await db.query('login_data', orderBy: 'id ASC', limit: 1);
+          print('🔍 Verification - Retrieved login data: $savedData');
+        } catch (verifyError) {
+          print(
+              '⚠️ Verification query failed (DB may have closed): $verifyError');
+          print(
+              '✅ But data was already saved successfully with ID: $insertResult');
+        }
+        print('✅ saveLoginData completed successfully!');
+        return; // Success - exit the retry loop
+      } catch (e) {
+        print(
+            '❌ Error saving login data (attempt ${retryCount + 1}/$maxRetries): $e');
+        print('❌ Error type: ${e.runtimeType}');
 
-      // Reset database connection on error
-      if (e.toString().contains('database_closed')) {
-        print('🔄 Resetting database connection due to closed database');
-        _database = null;
+        // Close the database if it's still open
+        if (db != null && db.isOpen) {
+          try {
+            await db.close();
+            print('🔒 Database connection closed after error');
+          } catch (_) {}
+        }
+        db = null;
+
+        // Reset database connection on error
+        if (e.toString().contains('database_closed')) {
+          print('🔄 Resetting database connection due to closed database');
+          _database = null;
+
+          // Retry if we haven't exceeded max retries
+          retryCount++;
+          if (retryCount < maxRetries) {
+            print('⏳ Waiting before retry...');
+            await Future.delayed(Duration(milliseconds: 200 * retryCount));
+            continue;
+          }
+        }
+
+        print('❌ Stack trace: ${StackTrace.current}');
+        rethrow; // Rethrow if not retrying
+      } finally {
+        // Always close the database connection we opened
+        if (db != null && db.isOpen) {
+          try {
+            await db.close();
+            print('🔒 Database connection closed');
+          } catch (_) {}
+        }
       }
     }
   }
@@ -425,6 +467,7 @@ class _LoginscreenState extends State<Loginscreen> {
   Map? getdeviceidresponse;
   String? managerName;
   String? ProfileImage;
+  int? cinefoDeviceId; // Store cinefoDeviceId from device registration
 
   int? vmid;
   bool screenloading = false;
@@ -507,6 +550,8 @@ class _LoginscreenState extends State<Loginscreen> {
             vmid = responseData['vmId'] ?? "N/A";
             productionTypeId = responseData['productionTypeId'] ?? 0;
             productionHouse = responseData['productionHouse'] ?? "N/A";
+            cinefoDeviceId = responseData['cinefoDeviceId'] ?? 0; // Store cinefoDeviceId
+            print('📱 Stored cinefoDeviceId from device registration: $cinefoDeviceId');
           });
         } else {
           print("Warning: responseData is null, not a list, or empty");
@@ -538,11 +583,7 @@ class _LoginscreenState extends State<Loginscreen> {
           'VMETID':
               'byrZ4bZrKm09R4O7WH6SPd7tvAtGnK1/plycMSP8sD5TKI/VZR0tHBKyO/ogYUIf4Qk6HJXvgyGzg58v0xmlMoRJABt3qUUWGtnJj/EKBsrOaFFGZ6xAbf6k6/ktf2gKsruyfbF2/D7r1CFZgUlmTmubGS1oMZZTSU433swBQbwLnPSreMNi8lIcHJKR2WepQnzNkwPPXxA4/XuZ7CZqqsfO6tmjnH47GoHr7H+FC8GK24zU3AwGIpX+Yg/efeibwapkP6mAya+5BTUGtNtltGOm0q7+2EJAfNcrSTdmoDB8xBerLaNNHhwVHowNIu+8JZl2QM0F/gmVpB55cB8rqg=='
         },
-        body: jsonEncode(
-            <String, String>{
-              // "baseURL": "productionmanager.cinefo.club"
-              "baseURL": "producermember.cinefo.club"
-            }),
+        body: jsonEncode(<String, String>{"baseURL": mainbaseurl}),
       );
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
@@ -584,8 +625,7 @@ class _LoginscreenState extends State<Loginscreen> {
           'DEVICETYPE': '2',
           'Content-Type': 'application/json; charset=UTF-8',
           'VPID': baseurlresult?['vpid']?.toString() ?? '',
-          "BASEURL": "producermember.cinefo.club",
-          // "BASEURL": "productionmanager.cinefo.club",
+          "BASEURL": mainbaseurl,
           'VPTEMPLATEID': baseurlresult?['vptemplteID']?.toString() ?? '',
           'VMETID':
               'jcd3r0UZg4FnqnFKCfAZqwj+d5Y7TJhxN6vIvKsoJIT++90iKP3dELmti79Q+W7aVywvVbhfoF5bdW32p33PbRRTT27Jt3pahRrFzUe5s0jQBoeE0jOraLITDQ6RBv0QoscoOGxL7n0gEWtLE15Bl/HSF2kG5pQYft+ZyF4DNsLf7tGXTz+w/30bv6vMTGmwUIDWqbEet/+5AAjgxEMT/G4kiZifX0eEb3gMxycdMchucGbMkhzK+4bvZKmIjX+z6uz7xqb1SMgPnjKmoqCk8w833K9le4LQ3KSYkcVhyX9B0Q3dDc16JDtpEPTz6b8rTwY8puqlzfuceh5mWogYuA==',
@@ -601,7 +641,6 @@ class _LoginscreenState extends State<Loginscreen> {
       print(
           "Login HTTP status:📊📊📊📊📊📊📊📊📊📊📊📊📊📊📊hvjhjvkjhgvhjgjmnvbkjgjbvn📊 ${response.statusCode}");
 
-      
       // Print response body in chunks to avoid truncation
       final responseBody = response.body;
       print("Login HTTP response length: ${responseBody.length}");

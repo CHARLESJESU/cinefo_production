@@ -54,6 +54,9 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       String selectedDateStr =
           "${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}";
 
+      // Generate date in YYMMDD format for callSheetId
+      String dateForId = "${selectedDate!.year.toString().substring(2)}${selectedDate!.month.toString().padLeft(2, '0')}${selectedDate!.day.toString().padLeft(2, '0')}";
+
       print('📅 Selected Date for SQLite: $selectedDateStr');
 
       final existingShift = await db.query(
@@ -94,17 +97,19 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       }
       final loginData = loginRows.first;
 
-      // Generate unique callSheetId (auto-increment handled by SQLite)
+      // Generate unique callSheetId using format: "YYMMDD-shiftId-deviceId"
+      String callSheetId = '$dateForId-$selectedShiftId-${loginData['cinefoDeviceId']}';
+      
       // Generate unique callSheetNo: "CN" + (max existing id + 1)
       final result =
           await db.rawQuery('SELECT MAX(id) as maxId FROM callsheetoffline');
       int nextId = (result.first['maxId'] as int? ?? 0) + 1;
-      String callSheetNo = 'CN$nextId';
+      String callSheetNo = 'CN$callSheetId';
 
       // Prepare data
       Map<String, dynamic> data = {
         // id is auto-increment
-        'callSheetId': nextId,
+        'callSheetId': callSheetId,
         'callSheetNo': callSheetNo,
         'MovieName': loginData['registered_movie'],
         'callsheetname': _nameController.text,
@@ -359,170 +364,6 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
 
     return await Geolocator.getCurrentPosition();
   }
-
-  // Future<void> _openGoogleMaps() async {
-  //   // Show loading indicator
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Row(
-  //         children: [
-  //           SizedBox(
-  //             width: 20,
-  //             height: 20,
-  //             child: CircularProgressIndicator(
-  //               strokeWidth: 2,
-  //               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-  //             ),
-  //           ),
-  //           SizedBox(width: 10),
-  //           Text('Getting your location...'),
-  //         ],
-  //       ),
-  //       duration: Duration(seconds: 2),
-  //     ),
-  //   );
-
-  //   try {
-  //     // Check if location services are enabled
-  //     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  //     if (!serviceEnabled) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text(
-  //               'Location services are disabled. Please enable them in settings.'),
-  //           backgroundColor: Colors.orange,
-  //           duration: Duration(seconds: 4),
-  //         ),
-  //       );
-  //       return;
-  //     }
-
-  //     // Check location permissions
-  //     LocationPermission permission = await Geolocator.checkPermission();
-  //     if (permission == LocationPermission.denied) {
-  //       permission = await Geolocator.requestPermission();
-  //       if (permission == LocationPermission.denied) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           const SnackBar(
-  //             content: Text(
-  //                 'Location permission denied. Please allow location access.'),
-  //             backgroundColor: Colors.red,
-  //           ),
-  //         );
-  //         return;
-  //       }
-  //     }
-
-  //     if (permission == LocationPermission.deniedForever) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text(
-  //               'Location permissions are permanently denied. Please enable them in app settings.'),
-  //           backgroundColor: Colors.red,
-  //           duration: Duration(seconds: 4),
-  //         ),
-  //       );
-  //       return;
-  //     }
-
-  //     // Get current position with better error handling
-  //     Position? position;
-  //     try {
-  //       position = await Geolocator.getCurrentPosition(
-  //         desiredAccuracy: LocationAccuracy.high,
-  //         timeLimit: const Duration(seconds: 15),
-  //       );
-  //     } catch (e) {
-  //       // Fallback to last known position
-  //       try {
-  //         position = await Geolocator.getLastKnownPosition();
-  //         if (position != null) {
-  //           ScaffoldMessenger.of(context).showSnackBar(
-  //             const SnackBar(
-  //               content: Text('Using last known location...'),
-  //               backgroundColor: Colors.blue,
-  //               duration: Duration(seconds: 2),
-  //             ),
-  //           );
-  //         }
-  //       } catch (e2) {
-  //         print('Error getting last known position: $e2');
-  //       }
-  //     }
-
-  //     if (position == null) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text('Unable to get your location. Please try again.'),
-  //           backgroundColor: Colors.red,
-  //         ),
-  //       );
-  //       return;
-  //     }
-
-  //     // Update location field with coordinates first
-  //     _locationController.text =
-  //         'Lat: ${position.latitude.toStringAsFixed(6)}, Long: ${position.longitude.toStringAsFixed(6)}';
-
-  //     // Create Google Maps URL
-  //     final String googleMapsUrl =
-  //         'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
-
-  //     // Try to launch Google Maps
-  //     bool launched = false;
-
-  //     try {
-  //       // Method 1: Try with external application mode
-  //       launched = await launchUrl(
-  //         Uri.parse(googleMapsUrl),
-  //         mode: LaunchMode.externalApplication,
-  //       );
-  //     } catch (e1) {
-  //       print('External app launch failed: $e1');
-
-  //       try {
-  //         // Method 2: Try with platform default mode
-  //         launched = await launchUrl(
-  //           Uri.parse(googleMapsUrl),
-  //           mode: LaunchMode.platformDefault,
-  //         );
-  //       } catch (e2) {
-  //         print('Platform default launch failed: $e2');
-  //         launched = false;
-  //       }
-  //     }
-
-  //     if (launched) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(
-  //           content: Text('Opening Google Maps...'),
-  //           backgroundColor: Colors.green,
-  //           duration: Duration(seconds: 2),
-  //         ),
-  //       );
-  //     } else {
-  //       // Show success message with coordinates
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(
-  //           content: Text(
-  //               'Location added! Lat: ${position.latitude.toStringAsFixed(4)}, Long: ${position.longitude.toStringAsFixed(4)}'),
-  //           backgroundColor: Colors.green,
-  //           duration: const Duration(seconds: 3),
-  //         ),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     print('Location error: $e');
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(
-  //             'Location error: Please check your location settings and try again.'),
-  //         backgroundColor: Colors.red,
-  //         duration: const Duration(seconds: 4),
-  //       ),
-  //     );
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {

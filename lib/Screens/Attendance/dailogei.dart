@@ -83,7 +83,7 @@ class _CountdownDialogState extends State<_CountdownDialog> {
           longitude TEXT,
           location TEXT,
           attendance_status TEXT,
-          callsheetid INTEGER,
+          callsheetid TEXT,
           mode TEXT,
           attendanceDate TEXT,
           attendanceTime TEXT
@@ -465,6 +465,7 @@ class IntimeSyncService {
         // });
         final requestBody = jsonEncode({
           "data": row['vcid'],
+          "tempId" : row['callsheetid'],
           "callsheetid": row['callsheetid'],
           "projectid": projectId,
           "productionTypeId": productionTypeId,
@@ -508,6 +509,7 @@ class IntimeSyncService {
         print(
             'IntimeSyncService: Sending POST request with body: $requestBody');
         // Print response body in chunks to handle large responses
+        print("📊📊📊📊📊📊 response $response");
         print('📊 Response body length: ${response.body.length}');
         if (response.body.isNotEmpty) {
           const int chunkSize = 800; // Print in chunks of 800 characters
@@ -523,7 +525,7 @@ class IntimeSyncService {
         }
 
         print('IntimeSyncService: POST statusCode=\\${response.statusCode}');
-        if (response.statusCode == 200 || response.statusCode == 1017) {
+        if (response.statusCode == 200) {
           print(
               "IntimeSyncService: Deleting row id=${row['id']} after successful POST.");
           try {
@@ -532,9 +534,9 @@ class IntimeSyncService {
           } catch (e) {
             print('❌ Error deleting record: $e');
           }
-        } else if (response.statusCode == -1 ||
-            response.statusCode == 400 ||
-            response.statusCode == 500) {
+        } else if (
+            response.statusCode == 404 ||
+            response.statusCode == 502) {
           print(
               "IntimeSyncService: Skipping row id=${row['id']} due to statusCode=${response.statusCode}. Data not deleted.");
           // Skip this row, do not delete, continue to next row

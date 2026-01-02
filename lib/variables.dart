@@ -17,7 +17,7 @@ String? projectId;
 String? managerName;
 Map? passProjectidresponse;
 String? registeredMovie;
-int? callsheetid;
+String? callsheetid;
 String? projectid;
 int? productionTypeId;
 List<dynamic> movieProjects = [];
@@ -43,10 +43,14 @@ int leadRole = 0;
 int secondLeadRole = 0;
 int leadRoleOtherLanguage = 0;
 int secondLeadRoleOtherLanguage = 0;
+// final processRequest =
+//     Uri.parse('https://devvgate.vframework.in/vgateapi/processRequest');
+// final processSessionRequest =
+//     Uri.parse('https://devvgate.vframework.in/vgateapi/processSessionRequest');
 final processRequest =
-    Uri.parse('https://devvgate.vframework.in/vgateapi/processRequest');
+    Uri.parse('https://vgate.vframework.in/vgateapi/processRequest');
 final processSessionRequest =
-    Uri.parse('https://devvgate.vframework.in/vgateapi/processSessionRequest');
+    Uri.parse('https://vgate.vframework.in/vgateapi/processSessionRequest');
 
 Map? closecallsheetresponse;
 Map<String, int> dubbingConfigStates = {};
@@ -83,6 +87,9 @@ int juinor_unitid = 12;
 int allowanceid_withoutbreak = 14;
 int allowanceid_helper = 23;
 int allowanceid_incharge = 24;
+String mainbaseurl = "producermember.cinefo.club";
+String productionbaseurl = "producermember.cinefo.club";
+String devbaseurl = "productionmanager.cinefo.club";
 String vmetid_fetch_config_unit_allowance =
     "QFjnHX2oXXReKA3tMjSN4dO8aT2LlE8O098UrCx6/szGQef/YKIzM2LehxeOBDZDNKZaeuOkTBKOfTIg03wvVPXUONEXWTvvKrQQ7heqxVKuyDxiMRcyPqLTkbcMAiibPoSJGSCUIhYToVwE+TWVLUW2Ke68yJdCgMrKFAxMwkx+yZdfZkSYILX25NMAunaH7ziKHEfbinOTQdIUR9xGnH9uord4oVLNW7vPSjVNkc7VAbpuz8L8Qr5I4FYUDKRDuz63H0XZSeX2+U6kzaSPMk870Y/jW+V47iYb2z4OQryivUdycPtdj6Zm7Wt8WWk8jGQJRFWx+UVUIs16c11Kqg==";
 
