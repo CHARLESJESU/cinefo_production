@@ -105,6 +105,7 @@ Future<void> createCallSheetFromOfflineWithoutContext(
 
     final payload = {
       "name": callsheetData['callsheetname'] ?? '',
+      "tempId": callsheetData['callSheetId']?.toString() ?? '',
       "shiftId": callsheetData['shiftId'] ?? '',
       "latitude": callsheetData['latitude'] ?? '',
       "longitude": callsheetData['longitude'] ?? '',
@@ -185,61 +186,9 @@ Future<void> createCallSheetFromOfflineWithoutContext(
           "📋 Server response status: ${createCallSheetresponse1?['status']}");
 
       if (createCallSheetresponse1?['message'] == "Success") {
-        // Update callsheetData with new callSheetNo and callSheetId from response
         responseData = createCallSheetresponse1?['responseData'];
-        if (responseData != null) {
-          // Update local SQLite
-          try {
-            var dbPath = await getDatabasesPath();
-            var db = await openDatabase(dbPath + '/production_login.db');
-            await db.update(
-              'callsheetoffline',
-              {
-                'callSheetNo': responseData['callSheetNo'],
-                'callSheetId': responseData['callSheetId'],
-              },
-              where: 'callSheetNo = ?',
-              whereArgs: [callsheetData['callSheetNo']],
-            );
-            await db.close();
-          } catch (e) {
-            print('Error updating local callsheetoffline: ' + e.toString());
-          }
-        }
 
         print("Created call sheet successfully");
-        // After success, update all matching rows in intime table
-        try {
-          var dbPath = await getDatabasesPath();
-          var mainDb = await openDatabase(dbPath + '/production_login.db');
-
-          print('Updating intime table:');
-          print('Setting callsheetid to: ${responseData?['callSheetId']}');
-          print('Where callsheetid was: ${callsheetData['callSheetId']}');
-
-          int updatedRows = await mainDb.update(
-            'intime',
-            {
-              'callsheetid': responseData?['callSheetId'],
-            },
-            where: 'callsheetid = ?',
-            whereArgs: [callsheetData['callSheetId']],
-          );
-
-          print('Updated $updatedRows rows in intime table');
-          //end here
-
-          // Close the main database connection
-          try {
-            if (mainDb.isOpen) {
-              await mainDb.close();
-            }
-          } catch (e) {
-            print('Error closing main database: $e');
-          }
-        } catch (e) {
-          print('Error updating intime table: ' + e.toString());
-        }
       } else {
         print('Error: ${createCallSheetresponse1?['message']}');
       }
@@ -390,6 +339,17 @@ Future<void> createCallSheetFromOfflineWithoutContext(
       if (callsheetData['status'] == 'closed') {
         print(
             "🎯 FIRST CONDITION: Callsheet status is 'closed' and rows is empty, proceeding with HTTP close request...");
+       final payload = {
+            "callshettId": 0,
+            "tempId": callsheetId,
+            "projectid": projectId,
+            "shiftid": callsheetData['shiftId'],
+            "callSheetStatusId": 3,
+            "callSheetTime": callsheetData['pack_up_time'] ??
+                DateFormat('HH:mm').format(DateTime.now()),
+            "callsheetcloseDate": callsheetData['pack_up_date'] ??
+                DateFormat('dd-MM-yyyy').format(DateTime.now()),
+          };
         await http.post(
           processSessionRequest,
           headers: <String, String>{
@@ -398,16 +358,7 @@ Future<void> createCallSheetFromOfflineWithoutContext(
                 'O/OtGf1bn9oD4GFpjRQ+Dec3uinWC4FwTdbrFCyiQDpN8SPMhon+ZaDHuLsnBHmfqGAjFXy6Gdjt6mQwzwqgfdWu+e+M8qwNk8gX9Ca3JxFQc++CDr8nd1Mrr57aHoLMlXprbFMxNy7ptfNoccm61r/9/lHCANMOt85n05HVfccknlopttLI5WM7DsNVU60/x5qylzlpXL24l8KwEFFPK1ky410+/uI3GkYi0l1u9DektKB/m1CINVbQ1Oob+FOW5lhNsBjqgpM/x1it89d7chbThdP5xlpygZsuG0AW4lakebF3ze497e16600v72fclgAZ3M21C0zUM4w9XIweMg==',
             'VSID': vsid ?? "",
           },
-          body: jsonEncode(<String, dynamic>{
-            "callshettId": callsheetId,
-            "projectid": projectId,
-            "shiftid": callsheetData['shiftId'],
-            "callSheetStatusId": 3,
-            "callSheetTime": callsheetData['pack_up_time'] ??
-                DateFormat('HH:mm').format(DateTime.now()),
-            "callsheetcloseDate": callsheetData['pack_up_date'] ??
-                DateFormat('dd-MM-yyyy').format(DateTime.now()),
-          }),
+          body: jsonEncode(payload),
         );
         print('--- ✅ Call Sheet Closed Successfully ---');
         try {
@@ -438,7 +389,8 @@ Future<void> createCallSheetFromOfflineWithoutContext(
 
         final requestBody = jsonEncode({
           "data": row['vcid'],
-          "callsheetid": row['callsheetid'],
+          "tempId": row['callsheetid'],
+          "callsheetid": 0,
           "projectid": projectId,
           "productionTypeId": productionTypeId,
           "doubing": {},
@@ -565,6 +517,17 @@ Future<void> createCallSheetFromOfflineWithoutContext(
         print("⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ");
         print(
             "✅ Callsheet status is 'closed', proceeding with HTTP close request...");
+        final payload={
+            "callshettId": 0,
+            "tempId": callsheetId,
+            "projectid": projectId,
+            "shiftid": callsheetData['shiftId'],
+            "callSheetStatusId": 3,
+            "callSheetTime": callsheetData['pack_up_time'] ??
+                DateFormat('HH:mm').format(DateTime.now()),
+            "callsheetcloseDate": callsheetData['pack_up_date'] ??
+                DateFormat('dd-MM-yyyy').format(DateTime.now()),
+          };
         await http.post(
           processSessionRequest,
           headers: <String, String>{
@@ -573,16 +536,7 @@ Future<void> createCallSheetFromOfflineWithoutContext(
                 'O/OtGf1bn9oD4GFpjRQ+Dec3uinWC4FwTdbrFCyiQDpN8SPMhon+ZaDHuLsnBHmfqGAjFXy6Gdjt6mQwzwqgfdWu+e+M8qwNk8gX9Ca3JxFQc++CDr8nd1Mrr57aHoLMlXprbFMxNy7ptfNoccm61r/9/lHCANMOt85n05HVfccknlopttLI5WM7DsNVU60/x5qylzlpXL24l8KwEFFPK1ky410+/uI3GkYi0l1u9DektKB/m1CINVbQ1Oob+FOW5lhNsBjqgpM/x1it89d7chbThdP5xlpygZsuG0AW4lakebF3ze497e16600v72fclgAZ3M21C0zUM4w9XIweMg==',
             'VSID': vsid ?? "",
           },
-          body: jsonEncode(<String, dynamic>{
-            "callshettId": callsheetId,
-            "projectid": projectId,
-            "shiftid": callsheetData['shiftId'],
-            "callSheetStatusId": 3,
-            "callSheetTime": callsheetData['pack_up_time'] ??
-                DateFormat('HH:mm').format(DateTime.now()),
-            "callsheetcloseDate": callsheetData['pack_up_date'] ??
-                DateFormat('dd-MM-yyyy').format(DateTime.now()),
-          }),
+          body: jsonEncode(payload),
         );
         print('--- ✅ Call Sheet Closed Successfully ---');
 

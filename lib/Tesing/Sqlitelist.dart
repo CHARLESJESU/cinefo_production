@@ -665,6 +665,8 @@ class _SqlitelistState extends State<Sqlitelist> {
                                                     item['manager_name']),
                                                 _buildDetailRow('Profile Image',
                                                     item['profile_image']),
+                                                     _buildDetailRow('cinefoDeviceId',
+                                                    item['cinefoDeviceId']?.toString()),
                                                 _buildDetailRow(
                                                     'Registered Movie',
                                                     item['registered_movie']),

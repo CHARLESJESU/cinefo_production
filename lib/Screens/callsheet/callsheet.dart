@@ -3,7 +3,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'offlinecreatecallsheet.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
-import 'package:production/Screens/Home/offline_callsheet_detail_screen.dart';
+import 'package:production/Screens/callsheet/offline_callsheet_detail_screen.dart';
 
 class CallSheet extends StatefulWidget {
   const CallSheet({super.key});

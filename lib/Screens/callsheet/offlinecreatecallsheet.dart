@@ -54,6 +54,9 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       String selectedDateStr =
           "${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}";
 
+      // Generate date in YYMMDD format for callSheetId
+      String dateForId = "${selectedDate!.year.toString().substring(2)}${selectedDate!.month.toString().padLeft(2, '0')}${selectedDate!.day.toString().padLeft(2, '0')}";
+
       print('📅 Selected Date for SQLite: $selectedDateStr');
 
       final existingShift = await db.query(
@@ -94,17 +97,19 @@ class _OfflineCreateCallSheetState extends State<OfflineCreateCallSheet> {
       }
       final loginData = loginRows.first;
 
-      // Generate unique callSheetId (auto-increment handled by SQLite)
+      // Generate unique callSheetId using format: "YYMMDD-shiftId-deviceId"
+      String callSheetId = '$dateForId-$selectedShiftId-${loginData['cinefoDeviceId']}';
+      
       // Generate unique callSheetNo: "CN" + (max existing id + 1)
       final result =
           await db.rawQuery('SELECT MAX(id) as maxId FROM callsheetoffline');
       int nextId = (result.first['maxId'] as int? ?? 0) + 1;
-      String callSheetNo = 'CN$nextId';
+      String callSheetNo = 'CN$callSheetId';
 
       // Prepare data
       Map<String, dynamic> data = {
         // id is auto-increment
-        'callSheetId': nextId,
+        'callSheetId': callSheetId,
         'callSheetNo': callSheetNo,
         'MovieName': loginData['registered_movie'],
         'callsheetname': _nameController.text,
