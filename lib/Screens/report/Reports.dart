@@ -281,10 +281,45 @@ class _ReportsState extends State<Reports> {
     String formattedDate = "Invalid Date";
     if (dateValue != null && dateValue.toString().trim().isNotEmpty) {
       try {
-        DateTime parsedDate = DateTime.parse(dateValue.toString());
+        DateTime parsedDate;
+        
+        // Check if dateValue is a number
+        if (dateValue is int || int.tryParse(dateValue.toString()) != null) {
+          int numericValue = dateValue is int ? dateValue : int.parse(dateValue.toString());
+          
+          // Check if it's in YYYYMMDD format (8 digits, between 19000101 and 21000000)
+          if (numericValue >= 19000101 && numericValue <= 21000000) {
+            int year = numericValue ~/ 10000;
+            int month = (numericValue % 10000) ~/ 100;
+            int day = numericValue % 100;
+            parsedDate = DateTime(year, month, day);
+          } 
+          // Check if it's a Unix timestamp in seconds
+          else if (numericValue < 10000000000) {
+            parsedDate = DateTime.fromMillisecondsSinceEpoch(numericValue * 1000);
+          } 
+          // Likely in milliseconds
+          else {
+            parsedDate = DateTime.fromMillisecondsSinceEpoch(numericValue);
+          }
+        } else {
+          // Try parsing as dd-MM-yyyy format first (common format from API)
+          String dateString = dateValue.toString();
+          if (dateString.contains('-') && dateString.split('-').length == 3) {
+            try {
+              parsedDate = DateFormat("dd-MM-yyyy").parse(dateString);
+            } catch (_) {
+              // If dd-MM-yyyy fails, try ISO 8601
+              parsedDate = DateTime.parse(dateString);
+            }
+          } else {
+            // Try parsing as ISO 8601 date string
+            parsedDate = DateTime.parse(dateString);
+          }
+        }
         formattedDate = DateFormat("dd/MM/yyyy").format(parsedDate);
       } catch (e) {
-        print("Error parsing date: $e");
+        print("ERROR parsing date: $e, dateValue: $dateValue (type: ${dateValue.runtimeType})");
       }
     }
 
