@@ -260,8 +260,9 @@ class _LoginscreenState extends State<Loginscreen> {
 
         // Prepare login data
         print('� Preparing login data...');
-        print('📱 Using cinefoDeviceId from device registration: $cinefoDeviceId');
-        
+        print(
+            '📱 Using cinefoDeviceId from device registration: $cinefoDeviceId');
+
         final loginData = {
           'manager_name': managerName ?? '',
           'cinefoDeviceId': cinefoDeviceId,
@@ -550,8 +551,10 @@ class _LoginscreenState extends State<Loginscreen> {
             vmid = responseData['vmId'] ?? "N/A";
             productionTypeId = responseData['productionTypeId'] ?? 0;
             productionHouse = responseData['productionHouse'] ?? "N/A";
-            cinefoDeviceId = responseData['cinefoDeviceId'] ?? 0; // Store cinefoDeviceId
-            print('📱 Stored cinefoDeviceId from device registration: $cinefoDeviceId');
+            cinefoDeviceId =
+                responseData['cinefoDeviceId'] ?? 0; // Store cinefoDeviceId
+            print(
+                '📱 Stored cinefoDeviceId from device registration: $cinefoDeviceId');
           });
         } else {
           print("Warning: responseData is null, not a list, or empty");
@@ -740,101 +743,23 @@ class _LoginscreenState extends State<Loginscreen> {
               }
             });
 
-            if (productionTypeId == 3) {
-              // Update ProfileImage from login response before saving
-              String? loginProfileImage;
-
-              if (responseBody['responseData'] is Map &&
-                  responseBody['responseData']['profileImage'] != null) {
-                loginProfileImage =
-                    responseBody['responseData']['profileImage'];
-                print(
-                    '📸 Found ProfileImage in responseData map: $loginProfileImage');
-              } else if (responseBody['responseData'] is List &&
-                  (responseBody['responseData'] as List).isNotEmpty) {
-                final firstItem = (responseBody['responseData'] as List)[0];
-                if (firstItem is Map && firstItem['profileImage'] != null) {
-                  loginProfileImage = firstItem['profileImage'];
-                  print(
-                      '📸 Found ProfileImage in responseData list[0]: $loginProfileImage');
-                }
-              } else if (responseBody['profileImage'] != null) {
-                loginProfileImage = responseBody['profileImage'];
-                print(
-                    '📸 Found ProfileImage in root response: $loginProfileImage');
-              }
-
-              if (loginProfileImage != null &&
-                  loginProfileImage.isNotEmpty &&
-                  loginProfileImage != 'Unknown') {
-                ProfileImage = loginProfileImage;
-                print(
-                    '📸 Updated ProfileImage before saving (prod type 3): $ProfileImage');
-              } else {
-                print(
-                    '⚠️ No valid ProfileImage found for prod type 3, keeping existing: $ProfileImage');
-              }
-
-              // Save login data to SQLite after successful login
-              print('🔄 Production type 3 - saving login data...');
+            // Save login data after successful login
+            print('🔄 Login successful - saving login data...');
+            try {
               await saveLoginData();
+              print('✅ Login data saved successfully');
+            } catch (e) {
+              print('❌ Error saving login data: $e');
+              // Continue with navigation even if save fails
+            }
 
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Routescreen()),
-                );
-              }
-            } else {
-              print(productionTypeId);
-              final loginVmid = loginresult?['vmid'];
-              if (vmid != null && loginVmid != null && vmid == loginVmid) {
-                // Update ProfileImage from login response if available
-                String? loginProfileImage;
-
-                if (loginresult is Map &&
-                    loginresult?['profileImage'] != null) {
-                  loginProfileImage = loginresult!['profileImage'];
-                  print(
-                      '📸 Found ProfileImage in loginresult map: $loginProfileImage');
-                } else if (loginresult is List &&
-                    (loginresult as List).isNotEmpty) {
-                  final firstItem = (loginresult as List)[0];
-                  if (firstItem is Map && firstItem['profileImage'] != null) {
-                    loginProfileImage = firstItem['profileImage'];
-                    print(
-                        '📸 Found ProfileImage in loginresult list[0]: $loginProfileImage');
-                  }
-                }
-
-                if (loginProfileImage != null &&
-                    loginProfileImage.isNotEmpty &&
-                    loginProfileImage != 'Unknown') {
-                  ProfileImage = loginProfileImage;
-                  print(
-                      '📸 Updated ProfileImage from login result: $ProfileImage');
-                } else {
-                  print(
-                      '⚠️ No valid ProfileImage found in login result, keeping existing: $ProfileImage');
-                }
-
-                // Save login data to SQLite after successful login
-                print('🔄 VM ID matched - saving login data...');
-                await saveLoginData();
-
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const Routescreen()),
-                  );
-                }
-              } else {
-                showmessage(
-                    context,
-                    "This device is not registered. Please contact the admin",
-                    "ok");
-              }
+            // Navigate to RouteScreen after successful login
+            print('✅ Navigating to RouteScreen...');
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Routescreen()),
+              );
             }
           } else {
             showmessage(context, "Invalid response from server", "ok");
